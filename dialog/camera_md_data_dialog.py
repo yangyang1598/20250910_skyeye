@@ -22,10 +22,15 @@ class CameraMdDataDialog(QDialog,Ui_dialog):
             # Mission Device (MD) 데이터 업데이트
             if 'latitude' in data:
                 self.label_data_md_lat.setText(f"{float(data['latitude']):.6f}")
+
             if 'longitude' in data:
                 self.label_data_md_lng.setText(f"{float(data['longitude']):.6f}")
-            if 'altitude' in data:
+
+            if 'altitude' in data and data['altitude'] is not None:
                 self.label_data_md_alt.setText(f"{float(data['altitude']):.2f}")
+            else:
+                self.label_data_md_alt.setText("N/A ")
+
             if 'roll' in data:
                 self.label_data_md_roll.setText(f"{float(data['roll']):.2f}°")
             if 'pitch' in data:
@@ -34,15 +39,15 @@ class CameraMdDataDialog(QDialog,Ui_dialog):
                 self.label_data_md_yaw.setText(f"{float(data['yaw']):.2f}°")
             
             # Camera 데이터 업데이트
-            if 'camera_latitude' in data:
-                self.label_data_cam_lat.setText(f"{float(data['camera_latitude']):.6f}")
-            elif 'latitude' in data:  # camera_latitude가 없으면 기본 latitude 사용
-                self.label_data_cam_lat.setText(f"{float(data['latitude']):.6f}")
+            # if 'camera_latitude' in data:
+            #     self.label_data_cam_lat.setText(f"{float(data['camera_latitude']):.6f}")
+            # elif 'latitude' in data:  # camera_latitude가 없으면 기본 latitude 사용
+            #     self.label_data_cam_lat.setText(f"{float(data['latitude']):.6f}")
                 
-            if 'camera_longitude' in data:
-                self.label_data_cam_lng.setText(f"{float(data['camera_longitude']):.6f}")
-            elif 'longitude' in data:  # camera_longitude가 없으면 기본 longitude 사용
-                self.label_data_cam_lng.setText(f"{float(data['longitude']):.6f}")
+            # if 'camera_longitude' in data:
+            #     self.label_data_cam_lng.setText(f"{float(data['camera_longitude']):.6f}")
+            # elif 'longitude' in data:  # camera_longitude가 없으면 기본 longitude 사용
+            #     self.label_data_cam_lng.setText(f"{float(data['longitude']):.6f}")
                 
             if 'camera_roll' in data:
                 self.label_data_cam_roll.setText(f"{float(data['camera_roll']):.2f}°")
@@ -64,7 +69,7 @@ class CameraMdDataDialog(QDialog,Ui_dialog):
             device_name = data.get('missiondevice_serial_number', 'Unknown Device')
             self.setWindowTitle(f"Camera Data - {device_name}")
                 
-            print(f"다이얼로그 데이터 업데이트 완료: {device_name}")
+            # print(f"다이얼로그 데이터 업데이트 완료: {device_name}")
             
         except Exception as e:
             print(f"다이얼로그 데이터 업데이트 오류: {e}")

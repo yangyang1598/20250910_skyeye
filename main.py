@@ -61,14 +61,92 @@ class MapApp(QMainWindow):
         self.timer.timeout.connect(self.update_device_data)
         self.timer.start(2000)  # 2초마다 업데이트
         
+        # 다이얼로그 업데이트용 타이머 추가
+        self.dialog_timer = QTimer()
+        self.dialog_timer.timeout.connect(self.update_dialog_data)
+        
         # 윈도우 설정
         self.setWindowTitle("SkyEye Map Application")
         self.setGeometry(100, 100, 1400, 800)
         
         # 다이얼로그 변수 초기화
         self.camera_dialog = None
+        self.current_device_serial = None  # 현재 선택된 드론 시리얼 번호
         
         self.show()
+
+    def show_camera_dialog(self, data):
+        """카메라 다이얼로그를 표시하고 데이터 업데이트"""
+        print(f"카메라 다이얼로그 표시 - 데이터: {data}")
+        
+        # 현재 선택된 드론 시리얼 번호 저장
+        self.current_device_serial = data.get('missiondevice_serial_number')
+        
+        # 기존 다이얼로그가 있다면 닫기
+        if self.camera_dialog:
+            self.camera_dialog.close()
+        
+        # 새 다이얼로그 생성
+        self.camera_dialog = CameraMdDataDialog()
+        self.camera_dialog.setParent(self)
+        
+        # 다이얼로그 윈도우 플래그 설정 (타이틀바 포함)
+        from PySide6.QtCore import Qt
+        self.camera_dialog.setWindowFlags(
+            Qt.Dialog | 
+            Qt.WindowStaysOnTopHint |
+            Qt.WindowCloseButtonHint |
+            Qt.WindowTitleHint
+        )
+        
+        # 다이얼로그를 우측에 위치시키기
+        main_geometry = self.geometry()
+        dialog_width = 310
+        dialog_height = 480
+        
+        # 메인 윈도우 우측에 위치
+        x = main_geometry.x() + main_geometry.width() - dialog_width - 20
+        y = main_geometry.y() + 50
+        
+        self.camera_dialog.setGeometry(x, y, dialog_width, dialog_height)
+        
+        # 데이터 업데이트
+        self.camera_dialog.update_data(data)
+        
+        # 다이얼로그 표시
+        self.camera_dialog.show()
+        
+        # 다이얼로그가 닫힐 때 타이머 중지하도록 연결
+        self.camera_dialog.finished.connect(self.on_dialog_closed)
+        
+        # 다이얼로그 업데이트 타이머 시작 (1초마다)
+        self.dialog_timer.start(1000)
+
+    def on_dialog_closed(self):
+        """다이얼로그가 닫힐 때 호출되는 메서드"""
+        self.dialog_timer.stop()
+        self.current_device_serial = None
+        self.camera_dialog = None
+
+    def update_dialog_data(self):
+        """다이얼로그가 열려있을 때 해당 드론의 데이터를 업데이트"""
+        if self.camera_dialog and self.camera_dialog.isVisible():
+            try:
+                # 최신 데이터 직접 가져오기
+                latest_data = self.get_mission_device_log()
+                if latest_data:
+                    self.camera_dialog.update_data(latest_data)
+            except Exception as e:
+                print(f"다이얼로그 데이터 업데이트 오류: {e}")
+        
+
+    # def get_device_data_by_serial(self, serial_number):
+    #     """특정 시리얼 번호의 드론 데이터를 가져오는 메서드"""
+    #     if self.device_data:
+    #         for device in self.device_data:
+    #             if device.get('missiondevice_serial_number') == serial_number:
+    #                 return device
+    #     return None
 
     def setup_ui(self):
         """UI 레이아웃 설정"""
@@ -91,38 +169,9 @@ class MapApp(QMainWindow):
         self.channel.registerObject("pyHandler", self.handler)
         self.web_view.page().setWebChannel(self.channel)
 
-    def show_camera_dialog(self, data):
-        """카메라 다이얼로그를 표시하고 데이터 업데이트"""
-        print(f"카메라 다이얼로그 표시 - 데이터: {data}")
-        
-        # 기존 다이얼로그가 있다면 닫기
-        if self.camera_dialog:
-            self.camera_dialog.close()
-        
-        # 새 다이얼로그 생성
-        self.camera_dialog = CameraMdDataDialog()
-        self.camera_dialog.setParent(self)
-        
-        # 다이얼로그를 우측에 위치시키기
-        main_geometry = self.geometry()
-        dialog_width = 400
-        dialog_height = 659
-        
-        # 메인 윈도우 우측에 위치
-        x = main_geometry.x() + main_geometry.width() - dialog_width - 100
-        y = main_geometry.y() + 10
-        
-        self.camera_dialog.setGeometry(x, y, dialog_width, dialog_height)
-        
-        # 데이터 업데이트
-        self.camera_dialog.update_data(data)
-        
-        # 다이얼로그 표시 (모달이 아닌 일반 윈도우로)
-        self.camera_dialog.show()
-
     def get_mission_device_log(self):
         try:
-            url = server_url + "MD-2025-02-L" # device name
+            url = server_url + "MD-2025-04-L" # device name
             headers = {'Content-Type': 'application/json', 'charset': 'UTF-8', 'Accept': '*/*', 'Authorization': token}
             response = requests.get(url, headers = headers)
             
