@@ -32,11 +32,11 @@ class CameraMdDataDialog(QDialog,Ui_dialog):
                 self.label_data_md_alt.setText("N/A ")
 
             if 'roll' in data:
-                self.label_data_md_roll.setText(f"{float(data['roll']):.2f}°")
+                self.label_data_md_roll.setText(f"{float(data['roll']):.2f}")
             if 'pitch' in data:
-                self.label_data_md_pitch.setText(f"{float(data['pitch']):.2f}°")
+                self.label_data_md_pitch.setText(f"{float(data['pitch']):.2f}")
             if 'yaw' in data:
-                self.label_data_md_yaw.setText(f"{float(data['yaw']):.2f}°")
+                self.label_data_md_yaw.setText(f"{float(data['yaw']):.2f}")
             
             # Camera 데이터 업데이트
             # if 'camera_latitude' in data:
@@ -50,11 +50,11 @@ class CameraMdDataDialog(QDialog,Ui_dialog):
             #     self.label_data_cam_lng.setText(f"{float(data['longitude']):.6f}")
                 
             if 'camera_roll' in data:
-                self.label_data_cam_roll.setText(f"{float(data['camera_roll']):.2f}°")
+                self.label_data_cam_roll.setText(f"{float(data['camera_roll']):.2f}")
             if 'camera_pitch' in data:
-                self.label_data_cam_pitch.setText(f"{float(data['camera_pitch']):.2f}°")
+                self.label_data_cam_pitch.setText(f"{float(data['camera_pitch']):.2f}")
             if 'camera_yaw' in data:
-                self.label_data_cam_yaw.setText(f"{float(data['camera_yaw']):.2f}°")
+                self.label_data_cam_yaw.setText(f"{float(data['camera_yaw']):.2f}")
             if 'camera_zoom' in data:
                 if not isIR:
                     #10배줌 카메라 기준

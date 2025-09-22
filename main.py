@@ -12,7 +12,7 @@ from dialog.camera_md_data_dialog import CameraMdDataDialog
 
 server_url = "http://skysys.iptime.org:8000/mission_device_log/?name="
 token ="Token 8dd64a2d6c5f87da2078e0e09b4b99db29614537" #device 계정 Token
-
+device_name = "MD-2025-04-L"
 class WebChannelHandler(QObject):
     """JavaScript와 Python 간의 통신을 위한 핸들러"""
     
@@ -61,26 +61,18 @@ class MapApp(QMainWindow):
         self.timer.timeout.connect(self.update_device_data)
         self.timer.start(2000)  # 2초마다 업데이트
         
-        # 다이얼로그 업데이트용 타이머 추가
-        self.dialog_timer = QTimer()
-        self.dialog_timer.timeout.connect(self.update_dialog_data)
-        
         # 윈도우 설정
         self.setWindowTitle("SkyEye Map Application")
         self.setGeometry(100, 100, 1400, 800)
         
         # 다이얼로그 변수 초기화
         self.camera_dialog = None
-        self.current_device_serial = None  # 현재 선택된 드론 시리얼 번호
         
         self.show()
 
     def show_camera_dialog(self, data):
         """카메라 다이얼로그를 표시하고 데이터 업데이트"""
         print(f"카메라 다이얼로그 표시 - 데이터: {data}")
-        
-        # 현재 선택된 드론 시리얼 번호 저장
-        self.current_device_serial = data.get('missiondevice_serial_number')
         
         # 기존 다이얼로그가 있다면 닫기
         if self.camera_dialog:
@@ -116,37 +108,12 @@ class MapApp(QMainWindow):
         # 다이얼로그 표시
         self.camera_dialog.show()
         
-        # 다이얼로그가 닫힐 때 타이머 중지하도록 연결
+        # 다이얼로그가 닫힐 때 호출되는 메서드 연결
         self.camera_dialog.finished.connect(self.on_dialog_closed)
-        
-        # 다이얼로그 업데이트 타이머 시작 (1초마다)
-        self.dialog_timer.start(1000)
 
     def on_dialog_closed(self):
         """다이얼로그가 닫힐 때 호출되는 메서드"""
-        self.dialog_timer.stop()
-        self.current_device_serial = None
         self.camera_dialog = None
-
-    def update_dialog_data(self):
-        """다이얼로그가 열려있을 때 해당 드론의 데이터를 업데이트"""
-        if self.camera_dialog and self.camera_dialog.isVisible():
-            try:
-                # 최신 데이터 직접 가져오기
-                latest_data = self.get_mission_device_log()
-                if latest_data:
-                    self.camera_dialog.update_data(latest_data)
-            except Exception as e:
-                print(f"다이얼로그 데이터 업데이트 오류: {e}")
-        
-
-    # def get_device_data_by_serial(self, serial_number):
-    #     """특정 시리얼 번호의 드론 데이터를 가져오는 메서드"""
-    #     if self.device_data:
-    #         for device in self.device_data:
-    #             if device.get('missiondevice_serial_number') == serial_number:
-    #                 return device
-    #     return None
 
     def setup_ui(self):
         """UI 레이아웃 설정"""
@@ -171,7 +138,7 @@ class MapApp(QMainWindow):
 
     def get_mission_device_log(self):
         try:
-            url = server_url + "MD-2025-04-L" # device name
+            url = server_url +device_name  # device name 하드 코딩 추후 변경 필요요
             headers = {'Content-Type': 'application/json', 'charset': 'UTF-8', 'Accept': '*/*', 'Authorization': token}
             response = requests.get(url, headers = headers)
             
@@ -187,7 +154,7 @@ class MapApp(QMainWindow):
             return None
 
     def update_device_data(self):
-        """주기적으로 디바이스 데이터를 가져와서 지도에 업데이트"""
+        """주기적으로 디바이스 데이터를 가져와서 지도에 업데이트하고, 다이얼로그가 열려있으면 업데이트"""
         data = self.get_mission_device_log()
                 
         if data:
@@ -199,6 +166,13 @@ class MapApp(QMainWindow):
             }}
             """
             self.web_view.page().runJavaScript(js_code)
+            
+            # 다이얼로그가 열려있으면 데이터 업데이트
+            if self.camera_dialog and self.camera_dialog.isVisible():
+                try:
+                    self.camera_dialog.update_data(data)
+                except Exception as e:
+                    print(f"다이얼로그 데이터 업데이트 오류: {e}")
            
     def on_load_finished(self, ok):
         if ok:
