@@ -13,6 +13,9 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
   <script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 
+  <!-- QWebChannel for Python communication -->
+  <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+
   <style>
     html, body, #map { height: 100%; margin: 0; }
     .leaflet-draw-toolbar { display: none; }
@@ -213,6 +216,12 @@
         camera_yaw: camera_yaw, // 카메라 헤딩 라인을 위한 camera_yaw 전달
         onClick: () => {
           // 기존 openVideoAt 함수를 활용하여 드론 비디오 팝업 열기
+          if (window.pyHandler) {
+            window.pyHandler.showCameraDialog(data);
+            console.log("카메라 다이얼로그 표시 요청:", data.missiondevice_serial_number);
+          } else {
+            console.warn("Python handler not available");
+          }
           const droneTitle = `[${data.missiondevice_serial_number || 'Unknown'}]`;
           
           openVideoAt(L.latLng(lat, lng), droneTitle, 'drone_cam');
