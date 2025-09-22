@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>Leaflet + Draw + Context Menu + Tracked + WebRTC</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Leaflet.Draw -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+
+  <style>
+    html, body, #map { height: 100%; margin: 0; }
+    .leaflet-draw-toolbar { display: none; }
+
+    /* 컨텍스트 메뉴 */
+    #ctxMenu, #markerMenu, #polyMenu{
+      position:absolute; z-index:10000; display:none;
+      background:#fff; border:1px solid #ccc; border-radius:8px;
+      box-shadow:0 6px 18px rgba(0,0,0,.15); min-width:160px;
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    }
+    #ctxMenu button, #markerMenu button, #polyMenu button{
+      width:100%; padding:10px 12px; border:none; background:#fff;
+      text-align:left; cursor:pointer; font-size:14px;
+    }
+    #ctxMenu button:hover, #markerMenu button:hover, #polyMenu button:hover{ background:#f2f2f2; }
+
+    /* 비디오 팝업 */
+    .video-popup .leaflet-popup-content-wrapper {
+      border-radius:10px; box-shadow:0 10px 24px rgba(0,0,0,.25);
+    }
+    .video-popup .leaflet-popup-content { margin:8px 10px; width:360px; }
+    .video-popup video { width:100%; background:#000; border-radius:8px; }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+
+  <!-- 메뉴들 -->
+  <div id="ctxMenu">
+    <button id="addMarkerBtn">마커 추가</button>
+    <button id="addPolygonBtn">폴리곤 추가</button>
+  </div>
+  <div id="markerMenu"><button id="mkDeleteBtn">이 마커 삭제</button></div>
+  <div id="polyMenu"><button id="polyDeleteBtn">이 폴리곤 삭제</button></div>
+
+  <script>
+    // ─────────────────────────────────────
+    // 설정
+    const MTX_ORIGIN = "http://192.168.88.42:8889"; // MediaMTX WebRTC
+    const CAMS = [
+      { id:"cam1", title:"cam1", lat:35.5396, lng:129.3115 }
+    ];
+
+    // 지도 생성
+    const map = L.map('map',{center:[35.5396,129.3115],zoom:13});
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+
+    // ─────────────────────────────────────
+    // 드로잉/메뉴
+    const drawnItems = new L.FeatureGroup().addTo(map);
+    const drawOptions = {
+      draw:{ polygon:true, marker:true, polyline:false, rectangle:false, circle:false, circlemarker:false },
+      edit:{ featureGroup: drawnItems }
+    };
+    const drawControl = new L.Control.Draw(drawOptions); map.addControl(drawControl);
+
+    const markers = {}, polygons = {};
+    let lastCtxLatLng=null, currentMarkerId=null, currentPolygonId=null, currentPolygonLayer=null;
+
+    const ctxMenu=document.getElementById('ctxMenu'),
+          markerMenu=document.getElementById('markerMenu'),
+          polyMenu=document.getElementById('polyMenu');
+
+    function hideMenus(){ ctxMenu.style.display="none"; markerMenu.style.display="none"; polyMenu.style.display="none"; }
+
+    map.on('contextmenu', e=>{ hideMenus(); lastCtxLatLng=e.latlng; ctxMenu.style.left=e.containerPoint.x+"px"; ctxMenu.style.top=e.containerPoint.y+"px"; ctxMenu.style.display="block"; });
+    ['click','movestart','zoomstart'].forEach(ev=>map.on(ev,hideMenus));
+
+    document.getElementById('addMarkerBtn').onclick=()=>{ hideMenus(); if(!lastCtxLatLng)return;
+      const id=`m_${Date.now()}`; const m=L.marker(lastCtxLatLng).addTo(map);
+      m.on('click',ev=>{ hideMenus(); markerMenu.style.left=ev.containerPoint.x+"px"; markerMenu.style.top=ev.containerPoint.y+"px"; markerMenu.style.display="block"; currentMarkerId=id; });
+      markers[id]=m;
+    };
+    document.getElementById('addPolygonBtn').onclick=()=>{ hideMenus(); new L.Draw.Polygon(map).enable(); };
+    document.getElementById('mkDeleteBtn').onclick=()=>{ if(currentMarkerId){map.removeLayer(markers[currentMarkerId]);delete markers[currentMarkerId];} hideMenus(); };
+    document.getElementById('polyDeleteBtn').onclick=()=>{ if(currentPolygonId&&currentPolygonLayer){ drawnItems.removeLayer(currentPolygonLayer); delete polygons[currentPolygonId];} hideMenus(); };
+
+    map.on(L.Draw.Event.CREATED,e=>{
+      const layer=e.layer; drawnItems.addLayer(layer);
+      if(e.layerType==='polygon'){ const id=`p_${Date.now()}`; polygons[id]=layer;
+        layer.on('click',ev=>{ hideMenus(); polyMenu.style.left=ev.containerPoint.x+"px"; polyMenu.style.top=ev.containerPoint.y+"px"; polyMenu.style.display="block"; currentPolygonId=id; currentPolygonLayer=layer; });
+      }
+    });
+
+    // ─────────────────────────────────────
+    // 추적 아이콘(방향/원/라인)
+    const trackedLayerGroup=L.layerGroup().addTo(map);
+    const canvasRenderer=L.canvas({padding:0.5});
+    let tracked={marker:null,latlng:null,heading:0,headingLine:null,rangeCircle:null};
+
+    function destinationPoint(lat,lng,bearing,distance){
+      const R=6371000; const brng=bearing*Math.PI/180; const φ1=lat*Math.PI/180; const λ1=lng*Math.PI/180; const δ=distance/R;
+      const φ2=Math.asin(Math.sin(φ1)*Math.cos(δ)+Math.cos(φ1)*Math.sin(δ)*Math.cos(brng));
+      const λ2=λ1+Math.atan2(Math.sin(brng)*Math.sin(δ)*Math.cos(φ1),Math.cos(δ)-Math.sin(φ1)*Math.sin(φ2));
+      return {lat:φ2*180/Math.PI,lng:((λ2*180/Math.PI+540)%360)-180};
+    }
+    function makeHeadingIcon(deg=0){
+      const safe=(deg%360+360)%360;
+      return L.divIcon({className:"",iconSize:[28,28],iconAnchor:[14,14],
+        html:`<div style="position:relative;width:30px;height:30px;">
+          <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(1)">
+            <div style="width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:20px solid #ff3b30;transform:rotate(${safe}deg);"></div>
+            <div style="position:absolute;left:50%;top:50%;width:8px;height:8px;border-radius:50%;background:#111;transform:translate(-50%,-50%);"></div>
+          </div>
+        </div>`});
+    }
+    function upsertTracked({lat,lng,heading,onClick}){
+      const ll=L.latLng(lat,lng); const hdg=(heading%360+360)%360;
+      if(!tracked.marker){ tracked.marker=L.marker(ll,{icon:makeHeadingIcon(hdg)}).addTo(trackedLayerGroup).on("click",onClick); }
+      else { tracked.marker.setLatLng(ll); }
+      tracked.marker.setIcon(makeHeadingIcon(hdg));
+      tracked.latlng=ll; tracked.heading=hdg;
+      const end=destinationPoint(lat,lng,hdg,1000);
+      if(!tracked.headingLine) tracked.headingLine=L.polyline([ll,[end.lat,end.lng]],{color:"#ff3b30",weight:3,renderer:canvasRenderer}).addTo(trackedLayerGroup);
+      else tracked.headingLine.setLatLngs([ll,[end.lat,end.lng]]);
+      if(!tracked.rangeCircle) tracked.rangeCircle=L.circle(ll,{radius:1000,color:"#3388ff",weight:2,fillOpacity:0.1,renderer:canvasRenderer}).addTo(trackedLayerGroup);
+      else tracked.rangeCircle.setLatLng(ll);
+    }
+
+    // ─────────────────────────────────────
+    // WebRTC 팝업
+    let videoPopup=null;
+    function openVideoAt(latlng,title,camId){
+      if(videoPopup) map.closePopup(videoPopup);
+      const content=document.createElement('div');
+      content.innerHTML=`<div><b>${title}</b></div><video autoplay playsinline muted controls></video>`;
+      videoPopup=L.popup({className:'video-popup',closeButton:true,offset:[14,-10]}).setLatLng(latlng).setContent(content).openOn(map);
+      const video=content.querySelector('video'); startWebRTC(video,camId);
+    }
+    async function startWebRTC(videoEl, camId){
+      const pc = new RTCPeerConnection();
+      pc.ontrack = (event) => { videoEl.srcObject = event.streams[0]; };
+
+      const offer = await pc.createOffer({offerToReceiveVideo:true});
+      await pc.setLocalDescription(offer);
+
+      console.log("Local SDP:", pc.localDescription.sdp); // ICE ufrag/pwd 확인
+
+      const resp = await fetch(`${MTX_ORIGIN}/${camId}/whep`, {
+        method: "POST",
+        body: pc.localDescription.sdp,   // 반드시 localDescription.sdp
+        headers: { "Content-Type": "application/sdp" }
+      });
+
+      const answerSDP = await resp.text();
+      await pc.setRemoteDescription({ type:"answer", sdp: answerSDP });
+    }
+
+
+    // ─────────────────────────────────────
+    // 데모: 카메라 마커 + 추적
+    // 데이터 연동 전 하드코딩
+    CAMS.forEach(c=>{
+    const m=L.marker([c.lat,c.lng]).addTo(map).bindTooltip(`${c.title}`);
+    m.on('click',ev=>openVideoAt(ev.latlng,c.title,c.id));
+    });
+    upsertTracked({lat:35.5396,lng:129.3115,heading:90,onClick:()=>openVideoAt(tracked.latlng,"Tracked 04L","04L")});
+    setInterval(()=>{ const cur=tracked.latlng; const hdg=(tracked.heading+20)%360;
+    upsertTracked({lat:cur.lat+0.00012*Math.cos(hdg*Math.PI/180),lng:cur.lng+0.00012*Math.sin(hdg*Math.PI/180),heading:hdg,onClick:()=>openVideoAt(tracked.latlng,"Tracked 04L","04L")});
+    },2000);
+  </script>
+</body>
+</html>
