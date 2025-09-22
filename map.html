@@ -165,16 +165,61 @@
 
 
     // ─────────────────────────────────────
+    // API 데이터 처리 및 드론 추적 (기존 함수 활용)
+    let lastDroneData = null;
+
+    // API 데이터를 받아서 지도 업데이트하는 함수 (기존 upsertTracked, openVideoAt 활용)
+    function updateDroneData(data) {
+      console.log("드론 데이터 업데이트:", data);
+      
+      // 위도/경도가 유효한지 확인 (0.0, 0.0은 무효한 좌표로 간주)
+      console.warn(data.latitude)
+      console.warn(typeof data.latitude === 'number' )
+      if (typeof data.latitude !== 'number' || typeof data.longitude !== 'number') {
+        console.warn("GPS 좌표 수신 오류: 위도/경도가 숫자가 아닙니다.");
+      }
+      if (!data.latitude || !data.longitude)
+    {
+        console.warn(" GPS 좌표 수신 오류: GPS 센서 인식 실패");
+      }
+
+      const lat = parseFloat(data.latitude);
+      const lng = parseFloat(data.longitude);
+      const yaw = parseFloat(data.yaw) || 0;
+      
+      // 기존 upsertTracked 함수를 활용하여 드론 추적 업데이트
+      upsertTracked({
+        lat: lat,
+        lng: lng,
+        heading: yaw,
+        onClick: () => {
+          // 기존 openVideoAt 함수를 활용하여 드론 비디오 팝업 열기
+          const droneTitle = `[${data.missiondevice_serial_number || 'Unknown'}]`;
+          
+          openVideoAt(L.latLng(lat, lng), droneTitle, 'drone_cam');
+        }
+      });
+      
+      // 지도 중심을 드론 위치로 이동 (첫 번째 데이터일 때만)
+      if (!lastDroneData) {
+        map.setView([lat, lng], 15);
+      }
+      
+      lastDroneData = data;
+    }
+
+    // ─────────────────────────────────────
     // 데모: 카메라 마커 + 추적
     // 데이터 연동 전 하드코딩
-    CAMS.forEach(c=>{
-    const m=L.marker([c.lat,c.lng]).addTo(map).bindTooltip(`${c.title}`);
-    m.on('click',ev=>openVideoAt(ev.latlng,c.title,c.id));
-    });
-    upsertTracked({lat:35.5396,lng:129.3115,heading:90,onClick:()=>openVideoAt(tracked.latlng,"Tracked 04L","04L")});
-    setInterval(()=>{ const cur=tracked.latlng; const hdg=(tracked.heading+20)%360;
-    upsertTracked({lat:cur.lat+0.00012*Math.cos(hdg*Math.PI/180),lng:cur.lng+0.00012*Math.sin(hdg*Math.PI/180),heading:hdg,onClick:()=>openVideoAt(tracked.latlng,"Tracked 04L","04L")});
-    },2000);
+    // CAMS.forEach(c=>{
+    // const m=L.marker([c.lat,c.lng]).addTo(map).bindTooltip(`${c.title}`);
+    // m.on('click',ev=>openVideoAt(ev.latlng,c.title,c.id));
+    // });
+    // upsertTracked({lat:35.5396,lng:129.3115,heading:90,onClick:()=>openVideoAt(tracked.latlng,"Tracked 04L","04L")});
+    // setInterval(()=>{ const cur=tracked.latlng; const hdg=(tracked.heading+20)%360;
+    // upsertTracked({lat:cur.lat+0.00012*Math.cos(hdg*Math.PI/180),lng:cur.lng+0.00012*Math.sin(hdg*Math.PI/180),heading:hdg,onClick:()=>openVideoAt(tracked.latlng,"Tracked 04L","04L")});
+    // },2000);
+    
   </script>
 </body>
 </html>
