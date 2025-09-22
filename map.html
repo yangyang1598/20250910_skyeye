@@ -103,7 +103,7 @@
     // 추적 아이콘(방향/원/라인)
     const trackedLayerGroup=L.layerGroup().addTo(map);
     const canvasRenderer=L.canvas({padding:0.5});
-    let tracked={marker:null,latlng:null,heading:0,headingLine:null,rangeCircle:null};
+    let tracked={marker:null,latlng:null,heading:0,headingLine:null,cameraHeadingLine:null,rangeCircle:null};
 
     function destinationPoint(lat,lng,bearing,distance){
       const R=6371000; const brng=bearing*Math.PI/180; const φ1=lat*Math.PI/180; const λ1=lng*Math.PI/180; const δ=distance/R;
@@ -121,15 +121,34 @@
           </div>
         </div>`});
     }
-    function upsertTracked({lat,lng,heading,onClick}){
+    function upsertTracked({lat,lng,heading,camera_yaw,onClick}){
       const ll=L.latLng(lat,lng); const hdg=(heading%360+360)%360;
       if(!tracked.marker){ tracked.marker=L.marker(ll,{icon:makeHeadingIcon(hdg)}).addTo(trackedLayerGroup).on("click",onClick); }
       else { tracked.marker.setLatLng(ll); }
       tracked.marker.setIcon(makeHeadingIcon(hdg));
       tracked.latlng=ll; tracked.heading=hdg;
+      
+      // 드론 헤딩 라인 (빨간색)
       const end=destinationPoint(lat,lng,hdg,1000);
       if(!tracked.headingLine) tracked.headingLine=L.polyline([ll,[end.lat,end.lng]],{color:"#ff3b30",weight:3,renderer:canvasRenderer}).addTo(trackedLayerGroup);
       else tracked.headingLine.setLatLngs([ll,[end.lat,end.lng]]);
+      
+      // 카메라 헤딩 라인 (파란색) - camera_yaw가 제공된 경우에만
+      if (camera_yaw !== undefined && camera_yaw !== null) {
+        const camHdg = (camera_yaw % 360 + 360) % 360;
+        const camEnd = destinationPoint(lat, lng, camHdg, 800);
+        if (!tracked.cameraHeadingLine) {
+          tracked.cameraHeadingLine = L.polyline([ll, [camEnd.lat, camEnd.lng]], {
+            color: "#007AFF", 
+            weight: 2, 
+            dashArray: "5, 2",
+            renderer: canvasRenderer
+          }).addTo(trackedLayerGroup);
+        } else {
+          tracked.cameraHeadingLine.setLatLngs([ll, [camEnd.lat, camEnd.lng]]);
+        }
+      }
+      
       if(!tracked.rangeCircle) tracked.rangeCircle=L.circle(ll,{radius:1000,color:"#3388ff",weight:2,fillOpacity:0.1,renderer:canvasRenderer}).addTo(trackedLayerGroup);
       else tracked.rangeCircle.setLatLng(ll);
     }
@@ -173,8 +192,6 @@
       console.log("드론 데이터 업데이트:", data);
       
       // 위도/경도가 유효한지 확인 (0.0, 0.0은 무효한 좌표로 간주)
-      console.warn(data.latitude)
-      console.warn(typeof data.latitude === 'number' )
       if (typeof data.latitude !== 'number' || typeof data.longitude !== 'number') {
         console.warn("GPS 좌표 수신 오류: 위도/경도가 숫자가 아닙니다.");
       }
@@ -186,12 +203,14 @@
       const lat = parseFloat(data.latitude);
       const lng = parseFloat(data.longitude);
       const yaw = parseFloat(data.yaw) || 0;
+      const camera_yaw = parseFloat(data.camera_yaw); // 카메라 yaw 값 추출
       
       // 기존 upsertTracked 함수를 활용하여 드론 추적 업데이트
       upsertTracked({
         lat: lat,
         lng: lng,
         heading: yaw,
+        camera_yaw: camera_yaw, // 카메라 헤딩 라인을 위한 camera_yaw 전달
         onClick: () => {
           // 기존 openVideoAt 함수를 활용하여 드론 비디오 팝업 열기
           const droneTitle = `[${data.missiondevice_serial_number || 'Unknown'}]`;
