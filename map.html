@@ -106,7 +106,7 @@
     // 추적 아이콘(방향/원/라인)
     const trackedLayerGroup=L.layerGroup().addTo(map);
     const canvasRenderer=L.canvas({padding:0.5});
-    let tracked={marker:null,latlng:null,heading:0,headingLine:null,cameraHeadingLine:null,rangeCircle:null};
+    let tracked={marker:null,latlng:null,heading:0,headingLine:null,cameraHeadingLine:null,rangeCircle:null}; //카메라 헤딩라인 추가
 
     function destinationPoint(lat,lng,bearing,distance){
       const R=6371000; const brng=bearing*Math.PI/180; const φ1=lat*Math.PI/180; const λ1=lng*Math.PI/180; const δ=distance/R;
@@ -124,6 +124,8 @@
           </div>
         </div>`});
     }
+
+    // 추적 아이콘 업데이트 (카메라 헤딩을 위한 camera_yaw 추가)
     function upsertTracked({lat,lng,heading,camera_yaw,onClick}){
       const ll=L.latLng(lat,lng); const hdg=(heading%360+360)%360;
       if(!tracked.marker){ tracked.marker=L.marker(ll,{icon:makeHeadingIcon(hdg)}).addTo(trackedLayerGroup).on("click",onClick); }
@@ -131,12 +133,12 @@
       tracked.marker.setIcon(makeHeadingIcon(hdg));
       tracked.latlng=ll; tracked.heading=hdg;
       
-      // 드론 헤딩 라인 (빨간색)
+      // 임무장비 헤딩 라인 (빨간색)
       const end=destinationPoint(lat,lng,hdg,1000);
       if(!tracked.headingLine) tracked.headingLine=L.polyline([ll,[end.lat,end.lng]],{color:"#ff3b30",weight:3,renderer:canvasRenderer}).addTo(trackedLayerGroup);
       else tracked.headingLine.setLatLngs([ll,[end.lat,end.lng]]);
       
-      // 카메라 헤딩 라인 (파란색) - camera_yaw가 제공된 경우에만
+      // 카메라 헤딩 라인 (파란색) 
       if (camera_yaw !== undefined && camera_yaw !== null) {
         const camHdg = (camera_yaw % 360 + 360) % 360;
         const camEnd = destinationPoint(lat, lng, camHdg, 800);
@@ -187,14 +189,14 @@
 
 
     // ─────────────────────────────────────
-    // API 데이터 처리 및 드론 추적 (기존 함수 활용)
+    // API 데이터 처리 및 임무장비 추적 
     let lastDroneData = null;
 
-    // API 데이터를 받아서 지도 업데이트하는 함수 (기존 upsertTracked, openVideoAt 활용)
+    // API 데이터를 받아서 지도 업데이트하는 함수 
     function updateDroneData(data) {
-      console.log("드론 데이터 업데이트:", data);
+      console.log("임무장비 데이터 업데이트:", data);
       
-      // 위도/경도가 유효한지 확인 (0.0, 0.0은 무효한 좌표로 간주)
+      // 위도/경도가 유효한지 확인 
       if (typeof data.latitude !== 'number' || typeof data.longitude !== 'number') {
         console.warn("GPS 좌표 수신 오류: 위도/경도가 숫자가 아닙니다.");
       }
@@ -208,14 +210,14 @@
       const yaw = parseFloat(data.yaw) || 0;
       const camera_yaw = parseFloat(data.camera_yaw); // 카메라 yaw 값 추출
       
-      // 기존 upsertTracked 함수를 활용하여 드론 추적 업데이트
+      // 임무장비 추적 업데이트
       upsertTracked({
         lat: lat,
         lng: lng,
         heading: yaw,
         camera_yaw: camera_yaw, // 카메라 헤딩 라인을 위한 camera_yaw 전달
         onClick: () => {
-          // 기존 openVideoAt 함수를 활용하여 드론 비디오 팝업 열기
+          // 임무장비 비디오 팝업 열기
           if (window.pyHandler) {
             window.pyHandler.showCameraDialog(data);
             console.log("카메라 다이얼로그 표시 요청:", data.missiondevice_serial_number);
@@ -228,7 +230,7 @@
         }
       });
       
-      // 지도 중심을 드론 위치로 이동 (첫 번째 데이터일 때만)
+      // 지도 중심을 임무장비 위치로 이동 (첫 번째 데이터일 때만)
       if (!lastDroneData) {
         map.setView([lat, lng], 15);
       }

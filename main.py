@@ -12,7 +12,7 @@ from dialog.camera_md_data_dialog import CameraMdDataDialog
 
 server_url = "http://skysys.iptime.org:8000/mission_device_log/?name="
 token ="Token 8dd64a2d6c5f87da2078e0e09b4b99db29614537" #device 계정 Token
-device_name = "MD-2025-04-L"
+device_name = "MD-2023-04-L"
 class WebChannelHandler(QObject):
     """JavaScript와 Python 간의 통신을 위한 핸들러"""
     
@@ -20,7 +20,8 @@ class WebChannelHandler(QObject):
         super().__init__()
         self.main_window = main_window
     
-    @Slot('QVariant')
+    @Slot('QVariant') 
+    # JavaScript의 모든 타입을 QVariant로 전달받음
     def showCameraDialog(self, data):
         """JavaScript에서 호출되는 메서드 - 카메라 다이얼로그 표시"""
         try:
@@ -184,6 +185,7 @@ class MapApp(QMainWindow):
                 console.log("WebChannel 연결 완료");
             });
             """
+            # Java -> python 통신용 QWebChannel 초기화
             self.web_view.page().runJavaScript(js_init_code)
             
             # 초기 데이터 로드
