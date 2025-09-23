@@ -45,6 +45,9 @@ class MapApp(QMainWindow):
         super().__init__()
         self.device_data = None
         
+        # 웹 뷰 생성 (전체 화면)
+        self.web_view = QWebEngineView()
+        
         # 메인 위젯과 레이아웃 설정
         self.setup_ui()
         
@@ -120,10 +123,7 @@ class MapApp(QMainWindow):
         """UI 레이아웃 설정"""
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
-        
-        # 웹 뷰 생성 (전체 화면)
-        self.web_view = QWebEngineView()
-        
+
         # 메인 레이아웃
         layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)  # 여백 제거
