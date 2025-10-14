@@ -226,6 +226,7 @@
           }
           const droneTitle = `[${data.missiondevice_serial_number || 'Unknown'}]`;
           
+          //TODO: 추후 yaml 파일을 수정하여 매핑 값 제공하도록 설정 필요
           openVideoAt(L.latLng(lat, lng), droneTitle, 'drone_cam');
         }
       });

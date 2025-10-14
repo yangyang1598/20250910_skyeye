@@ -1,18 +1,19 @@
 import sys, os
 import requests
 import json
-from PySide6.QtWidgets import QApplication, QMainWindow, QHBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QGridLayout, QMainWindow, QHBoxLayout, QWidget, QVBoxLayout
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtCore import QUrl, QTimer, QObject, Slot
+from PySide6.QtCore import QUrl, QTimer, QObject, Slot, Qt
 from PySide6.QtWebEngineCore import QWebEngineSettings
 from PySide6.QtWebChannel import QWebChannel
 
-# dialog 폴더의 camera_md_data_dialog import
-from dialog.camera_md_data_dialog import CameraMdDataDialog
+# widget 폴더의 camera_md_data_widget import
+from widget.camera_md_data_widget import CameraMdDataWidget
+from widget.camera_control_widget import CameraControlWidget
 
 server_url = "http://skysys.iptime.org:8000/mission_device_log/?name="
 token ="Token 8dd64a2d6c5f87da2078e0e09b4b99db29614537" #device 계정 Token
-device_name = "MD-2023-04-L"
+device_name = "MD-2023-03-L"
 class WebChannelHandler(QObject):
     """JavaScript와 Python 간의 통신을 위한 핸들러"""
     
@@ -34,7 +35,8 @@ class WebChannelHandler(QObject):
                 data = data.toVariant()
             
             print(f"카메라 다이얼로그 데이터 수신: {type(data)}")
-            self.main_window.show_camera_dialog(data)
+            self.main_window.show_camera_md_data_widget(data)
+            self.main_window.show_camera_control()
         except Exception as e:
             print(f"카메라 다이얼로그 표시 오류: {e}")
             import traceback
@@ -70,65 +72,89 @@ class MapApp(QMainWindow):
         self.setGeometry(100, 100, 1400, 800)
         
         # 다이얼로그 변수 초기화
-        self.camera_dialog = None
+        self.camera_md_data_widget = None
+        self.camera_control_widget=None
+        self.right_container = None
+        self.right_layout = None
         
         self.show()
 
-    def show_camera_dialog(self, data):
-        """카메라 다이얼로그를 표시하고 데이터 업데이트"""
-        print(f"카메라 다이얼로그 표시 - 데이터: {data}")
-        
-        # 기존 다이얼로그가 있다면 닫기
-        if self.camera_dialog:
-            self.camera_dialog.close()
-        
-        # 새 다이얼로그 생성
-        self.camera_dialog = CameraMdDataDialog()
-        self.camera_dialog.setParent(self)
-        
-        # 다이얼로그 윈도우 플래그 설정 (타이틀바 포함)
-        from PySide6.QtCore import Qt
-        self.camera_dialog.setWindowFlags(
-            Qt.Dialog | 
-            Qt.WindowStaysOnTopHint |
-            Qt.WindowCloseButtonHint |
-            Qt.WindowTitleHint
-        )
-        
-        # 다이얼로그를 우측에 위치시키기
-        main_geometry = self.geometry()
-        dialog_width = 310
-        dialog_height = 480
-        
-        # 메인 윈도우 우측에 위치
-        x = main_geometry.x() + main_geometry.width() - dialog_width - 20
-        y = main_geometry.y() + 50
-        
-        self.camera_dialog.setGeometry(x, y, dialog_width, dialog_height)
-        
-        # 데이터 업데이트
-        self.camera_dialog.update_data(data)
-        
-        # 다이얼로그 표시
-        self.camera_dialog.show()
-        
-        # 다이얼로그가 닫힐 때 호출되는 메서드 연결
-        self.camera_dialog.finished.connect(self.on_dialog_closed)
+    def show_camera_md_data_widget(self, data):
+        """카메라 위젯을 메인 창 오른쪽에 도킹해서 표시"""
+        print(f"카메라 위젯 표시 - 데이터: {data}")
+
+        # 이미 열려있으면 숨김(토글) 후 종료
+        if self.camera_md_data_widget and self.camera_md_data_widget.isVisible():
+            self.camera_md_data_widget.hide()
+            return
+
+        # 기존 위젯이 있으면 재사용, 없으면 생성해 우측 컨테이너에 추가
+        if not self.camera_md_data_widget:
+            # 우측 컨테이너가 없으면 생성하여 메인 레이아웃에 추가 (상/하 분할용)
+            if not self.right_container:
+                self.right_container = QWidget()
+                self.right_layout = QVBoxLayout(self.right_container)
+                self.right_layout.setContentsMargins(0, 0, 0, 0)
+                # 우측 컨테이너를 그리드의 (0, 1)에 명시적으로 배치
+                self.main_layout.addWidget(self.right_container, 0, 1)
+                # 열 비율을 10:1로 유지
+                self.main_layout.setColumnStretch(0, 10)
+                self.main_layout.setColumnStretch(1, 1)
+
+            self.camera_md_data_widget = CameraMdDataWidget()
+            self.right_layout.addWidget(self.camera_md_data_widget)
+
+        # 데이터 업데이트 및 표시
+        try:
+            self.camera_md_data_widget.update_data(data)
+        except Exception as e:
+            print(f"카메라 위젯 데이터 업데이트 오류: {e}")
+
+        self.camera_md_data_widget.show()
+
+    def show_camera_control(self):
+        if self.camera_control_widget and self.camera_control_widget.isVisible():
+            self.camera_control_widget.hide()
+            return
+        if not self.camera_control_widget:
+            # 우측 컨테이너가 없으면 생성하여 메인 레이아웃에 추가
+            if not self.right_container:
+                self.right_container = QWidget()
+                self.right_layout = QVBoxLayout(self.right_container)
+                self.right_layout.setContentsMargins(0, 0, 0, 0)
+                # 우측 컨테이너를 그리드의 (0, 1)에 명시적으로 배치
+                self.main_layout.addWidget(self.right_container, 0, 1)
+                # 열 비율을 10:1로 유지
+                self.main_layout.setColumnStretch(0, 10)
+                self.main_layout.setColumnStretch(1, 1)
+
+            self.camera_control_widget = CameraControlWidget()
+            # 하단에 컨트롤 위젯 배치
+            self.right_layout.addWidget(self.camera_control_widget)
+
+        self.camera_control_widget.show()
 
     def on_dialog_closed(self):
         """다이얼로그가 닫힐 때 호출되는 메서드"""
-        self.camera_dialog = None
+        self.camera_md_data_widget = None
+        self.camera_control_widget=None
 
     def setup_ui(self):
         """UI 레이아웃 설정"""
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
-        # 메인 레이아웃
-        layout = QHBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)  # 여백 제거
-        layout.addWidget(self.web_view)
-        central_widget.setLayout(layout)
+        # 메인 레이아웃 (위젯 송출 함수에 사용하기 위해 인스턴스 변수 선언)
+        self.main_layout = QGridLayout()
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
+
+        # 좌측: 웹뷰를 (row=0, col=0)에 명시적으로 배치
+        self.main_layout.addWidget(self.web_view, 0, 0)
+        # 열 비율을 10:1로 설정
+        self.main_layout.setColumnStretch(0, 10)
+        self.main_layout.setColumnStretch(1, 1)
+
+        central_widget.setLayout(self.main_layout)
 
     def setup_web_channel(self):
         """JavaScript와 Python 간 통신을 위한 WebChannel 설정"""
@@ -169,9 +195,9 @@ class MapApp(QMainWindow):
             self.web_view.page().runJavaScript(js_code)
             
             # 다이얼로그가 열려있으면 데이터 업데이트
-            if self.camera_dialog and self.camera_dialog.isVisible():
+            if self.camera_md_data_widget and self.camera_md_data_widget.isVisible():
                 try:
-                    self.camera_dialog.update_data(data)
+                    self.camera_md_data_widget.update_data(data)
                 except Exception as e:
                     print(f"다이얼로그 데이터 업데이트 오류: {e}")
            

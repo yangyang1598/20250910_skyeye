@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'camera_control_widgetbOcqNj.ui'
+## Form generated from reading UI file 'camera_control_widgetDTtrCR.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.8.1
+## Created by: Qt User Interface Compiler version 6.9.2
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -23,7 +23,7 @@ class Ui_Form(object):
     def setupUi(self, Form):
         if not Form.objectName():
             Form.setObjectName(u"Form")
-        Form.resize(540, 300)
+        Form.resize(484, 257)
         sizePolicy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -75,6 +75,8 @@ class Ui_Form(object):
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
         self.horizontal_slider_cam_speed = QSlider(Form)
         self.horizontal_slider_cam_speed.setObjectName(u"horizontal_slider_cam_speed")
+        self.horizontal_slider_cam_speed.setMaximum(100)
+        self.horizontal_slider_cam_speed.setValue(100)
         self.horizontal_slider_cam_speed.setOrientation(Qt.Orientation.Horizontal)
 
         self.horizontalLayout_2.addWidget(self.horizontal_slider_cam_speed)
@@ -104,7 +106,7 @@ class Ui_Form(object):
         sizePolicy1.setHeightForWidth(self.button_right_up.sizePolicy().hasHeightForWidth())
         self.button_right_up.setSizePolicy(sizePolicy1)
         font1 = QFont()
-        font1.setPointSize(20)
+        font1.setPointSize(16)
         font1.setBold(True)
         self.button_right_up.setFont(font1)
 
@@ -194,17 +196,8 @@ class Ui_Form(object):
         sizePolicy1.setHeightForWidth(self.button_zoom_out.sizePolicy().hasHeightForWidth())
         self.button_zoom_out.setSizePolicy(sizePolicy1)
         font2 = QFont()
-        font2.setPointSize(20)
+        font2.setPointSize(10)
         self.button_zoom_out.setFont(font2)
-        self.button_zoom_out.setStyleSheet(u"QPushButton {\n"
-"    border: none;\n"
-"    background-image: url(\"D:/Downloads/minus.png\");\n"
-"    background-repeat: no-repeat;\n"
-"    background-position: center;\n"
-"    /* \ubc84\ud2bc \ud06c\uae30 \uc124\uc815 */\n"
-"    min-width: 50px;\n"
-"    min-height: 50px;\n"
-"}")
 
         self.horizontalLayout.addWidget(self.button_zoom_out)
 
@@ -213,7 +206,7 @@ class Ui_Form(object):
         sizePolicy1.setHeightForWidth(self.label_zoom.sizePolicy().hasHeightForWidth())
         self.label_zoom.setSizePolicy(sizePolicy1)
         font3 = QFont()
-        font3.setPointSize(16)
+        font3.setPointSize(14)
         self.label_zoom.setFont(font3)
         self.label_zoom.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
@@ -224,15 +217,6 @@ class Ui_Form(object):
         sizePolicy1.setHeightForWidth(self.button_zoom_in.sizePolicy().hasHeightForWidth())
         self.button_zoom_in.setSizePolicy(sizePolicy1)
         self.button_zoom_in.setFont(font2)
-        self.button_zoom_in.setStyleSheet(u"QPushButton {\n"
-"    border: none;\n"
-"    background-image: url(\"D:/Downloads/plus.png\");\n"
-"    background-repeat: no-repeat;\n"
-"    background-position: center;\n"
-"    /* \ubc84\ud2bc \ud06c\uae30 \uc124\uc815 */\n"
-"    min-width: 50px;\n"
-"    min-height: 50px;\n"
-"}")
 
         self.horizontalLayout.addWidget(self.button_zoom_in)
 
@@ -246,7 +230,7 @@ class Ui_Form(object):
         sizePolicy1.setHeightForWidth(self.label_active_follow_yaw.sizePolicy().hasHeightForWidth())
         self.label_active_follow_yaw.setSizePolicy(sizePolicy1)
         font4 = QFont()
-        font4.setPointSize(12)
+        font4.setPointSize(11)
         font4.setBold(True)
         self.label_active_follow_yaw.setFont(font4)
         self.label_active_follow_yaw.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
@@ -259,17 +243,9 @@ class Ui_Form(object):
         self.toggle_active_follow_yaw.setSizePolicy(sizePolicy)
         self.toggle_active_follow_yaw.setMaximumSize(QSize(150, 58))
         font5 = QFont()
-        font5.setPointSize(50)
+        font5.setPointSize(24)
         self.toggle_active_follow_yaw.setFont(font5)
         self.toggle_active_follow_yaw.setAutoFillBackground(False)
-        self.toggle_active_follow_yaw.setStyleSheet(u"QPushButton:checked {\n"
-"    border: none;\n"
-"    image: url(\"D:/Downloads/switch-on.png\");\n"
-"}\n"
-"QPushButton:!checked {\n"
-"    border: none;\n"
-"    image: url(\"D:/Downloads/switch-off.png\");\n"
-"}")
         self.toggle_active_follow_yaw.setIconSize(QSize(50, 50))
         self.toggle_active_follow_yaw.setCheckable(True)
 
@@ -295,16 +271,10 @@ class Ui_Form(object):
         sizePolicy.setHeightForWidth(self.toggle_active_motor.sizePolicy().hasHeightForWidth())
         self.toggle_active_motor.setSizePolicy(sizePolicy)
         self.toggle_active_motor.setMaximumSize(QSize(150, 58))
-        self.toggle_active_motor.setFont(font5)
+        font6 = QFont()
+        font6.setPointSize(41)
+        self.toggle_active_motor.setFont(font6)
         self.toggle_active_motor.setAutoFillBackground(False)
-        self.toggle_active_motor.setStyleSheet(u"QPushButton:checked {\n"
-"    border: none;\n"
-"    image: url(\"D:/Downloads/switch-on.png\");\n"
-"}\n"
-"QPushButton:!checked {\n"
-"    border: none;\n"
-"    image: url(\"D:/Downloads/switch-off.png\");\n"
-"}")
         self.toggle_active_motor.setIconSize(QSize(50, 50))
         self.toggle_active_motor.setCheckable(True)
 
@@ -329,7 +299,9 @@ class Ui_Form(object):
         sizePolicy.setHeightForWidth(self.toggle_active_osd.sizePolicy().hasHeightForWidth())
         self.toggle_active_osd.setSizePolicy(sizePolicy)
         self.toggle_active_osd.setMaximumSize(QSize(150, 58))
-        self.toggle_active_osd.setFont(font5)
+        font7 = QFont()
+        font7.setPointSize(36)
+        self.toggle_active_osd.setFont(font7)
         self.toggle_active_osd.setAutoFillBackground(False)
         self.toggle_active_osd.setStyleSheet(u"QPushButton:checked {\n"
 "    border: none;\n"
