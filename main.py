@@ -61,9 +61,11 @@ class MapApp(QMainWindow):
         self.setup_ui()
         self.setup_web_channel()
         self.setup_timer()
-
+        self.setup_sse_event()
+        
         self.load_map()
         self.setup_window()
+
 
     # --------------------------
     # 초기화 관련 메서드
@@ -109,13 +111,21 @@ class MapApp(QMainWindow):
         path = os.path.abspath("map.html")
         self.web_view.load(QUrl.fromLocalFile(path))
         self.web_view.loadFinished.connect(self.on_load_finished)
-    # def post_connect_event(self):
-    #     """연결 이벤트 전송"""
-    #     self.protocol.post_event_message({
-    #         "cmd": "connect",
-    #         "mode": "",
-    #         "value": "",
-    #     })
+
+    def setup_sse_event(self):
+        # 핸들러 등록: C# SseEvent와 유사하게 obj 접근
+        self.protocol.set_sse_event_handler(
+            lambda e: print("event:" + str(e.obj))
+        )
+
+        # 스트림 연결 시작
+        self.protocol.open_sse_stream()
+        self.text={
+            "cmd":"connect",
+            "mode":"",
+            "value":""
+        }
+        self.protocol.post_event_message(self.text)
     # --------------------------
     # 우측 위젯 표시 관련
     # --------------------------
