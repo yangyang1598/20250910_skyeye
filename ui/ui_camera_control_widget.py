@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'camera_control_widgetDTtrCR.ui'
+## Form generated from reading UI file 'camera_control_widgetlGkKpX.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -29,7 +29,10 @@ class Ui_Form(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(Form.sizePolicy().hasHeightForWidth())
         Form.setSizePolicy(sizePolicy)
-        Form.setMaximumSize(QSize(540, 300))
+        Form.setMaximumSize(QSize(484, 257))
+        font = QFont()
+        font.setPointSize(5)
+        Form.setFont(font)
         Form.setAcceptDrops(False)
         Form.setStyleSheet(u"QCheckBox::indicator:checked {\n"
 "    image: url(1.png);\n"
@@ -61,12 +64,12 @@ class Ui_Form(object):
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
         self.label = QLabel(Form)
         self.label.setObjectName(u"label")
-        font = QFont()
-        font.setPointSize(12)
-        font.setBold(True)
-        font.setItalic(False)
-        font.setUnderline(False)
-        self.label.setFont(font)
+        font1 = QFont()
+        font1.setPointSize(12)
+        font1.setBold(True)
+        font1.setItalic(False)
+        font1.setUnderline(False)
+        self.label.setFont(font1)
         self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.verticalLayout_2.addWidget(self.label)
@@ -98,33 +101,33 @@ class Ui_Form(object):
 
         self.gridLayout = QGridLayout()
         self.gridLayout.setObjectName(u"gridLayout")
-        self.button_right_up = QPushButton(Form)
-        self.button_right_up.setObjectName(u"button_right_up")
+        self.button_right_top = QPushButton(Form)
+        self.button_right_top.setObjectName(u"button_right_top")
         sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         sizePolicy1.setHorizontalStretch(0)
         sizePolicy1.setVerticalStretch(0)
-        sizePolicy1.setHeightForWidth(self.button_right_up.sizePolicy().hasHeightForWidth())
-        self.button_right_up.setSizePolicy(sizePolicy1)
-        font1 = QFont()
-        font1.setPointSize(16)
-        font1.setBold(True)
-        self.button_right_up.setFont(font1)
+        sizePolicy1.setHeightForWidth(self.button_right_top.sizePolicy().hasHeightForWidth())
+        self.button_right_top.setSizePolicy(sizePolicy1)
+        font2 = QFont()
+        font2.setPointSize(16)
+        font2.setBold(True)
+        self.button_right_top.setFont(font2)
 
-        self.gridLayout.addWidget(self.button_right_up, 1, 2, 1, 1)
+        self.gridLayout.addWidget(self.button_right_top, 1, 2, 1, 1)
 
-        self.button_up = QPushButton(Form)
-        self.button_up.setObjectName(u"button_up")
-        sizePolicy1.setHeightForWidth(self.button_up.sizePolicy().hasHeightForWidth())
-        self.button_up.setSizePolicy(sizePolicy1)
-        self.button_up.setFont(font1)
+        self.button_top = QPushButton(Form)
+        self.button_top.setObjectName(u"button_top")
+        sizePolicy1.setHeightForWidth(self.button_top.sizePolicy().hasHeightForWidth())
+        self.button_top.setSizePolicy(sizePolicy1)
+        self.button_top.setFont(font2)
 
-        self.gridLayout.addWidget(self.button_up, 1, 1, 1, 1)
+        self.gridLayout.addWidget(self.button_top, 1, 1, 1, 1)
 
         self.button_left_down = QPushButton(Form)
         self.button_left_down.setObjectName(u"button_left_down")
         sizePolicy1.setHeightForWidth(self.button_left_down.sizePolicy().hasHeightForWidth())
         self.button_left_down.setSizePolicy(sizePolicy1)
-        self.button_left_down.setFont(font1)
+        self.button_left_down.setFont(font2)
 
         self.gridLayout.addWidget(self.button_left_down, 4, 0, 1, 1)
 
@@ -132,7 +135,7 @@ class Ui_Form(object):
         self.button_right.setObjectName(u"button_right")
         sizePolicy1.setHeightForWidth(self.button_right.sizePolicy().hasHeightForWidth())
         self.button_right.setSizePolicy(sizePolicy1)
-        self.button_right.setFont(font1)
+        self.button_right.setFont(font2)
 
         self.gridLayout.addWidget(self.button_right, 2, 2, 1, 1)
 
@@ -140,7 +143,7 @@ class Ui_Form(object):
         self.button_left.setObjectName(u"button_left")
         sizePolicy1.setHeightForWidth(self.button_left.sizePolicy().hasHeightForWidth())
         self.button_left.setSizePolicy(sizePolicy1)
-        self.button_left.setFont(font1)
+        self.button_left.setFont(font2)
 
         self.gridLayout.addWidget(self.button_left, 2, 0, 1, 1)
 
@@ -148,7 +151,7 @@ class Ui_Form(object):
         self.button_down.setObjectName(u"button_down")
         sizePolicy1.setHeightForWidth(self.button_down.sizePolicy().hasHeightForWidth())
         self.button_down.setSizePolicy(sizePolicy1)
-        self.button_down.setFont(font1)
+        self.button_down.setFont(font2)
 
         self.gridLayout.addWidget(self.button_down, 4, 1, 1, 1)
 
@@ -157,19 +160,19 @@ class Ui_Form(object):
 
         self.gridLayout.addLayout(self.verticalLayout, 2, 3, 1, 1)
 
-        self.button_left_up = QPushButton(Form)
-        self.button_left_up.setObjectName(u"button_left_up")
-        sizePolicy1.setHeightForWidth(self.button_left_up.sizePolicy().hasHeightForWidth())
-        self.button_left_up.setSizePolicy(sizePolicy1)
-        self.button_left_up.setFont(font1)
+        self.button_left_top = QPushButton(Form)
+        self.button_left_top.setObjectName(u"button_left_top")
+        sizePolicy1.setHeightForWidth(self.button_left_top.sizePolicy().hasHeightForWidth())
+        self.button_left_top.setSizePolicy(sizePolicy1)
+        self.button_left_top.setFont(font2)
 
-        self.gridLayout.addWidget(self.button_left_up, 1, 0, 1, 1)
+        self.gridLayout.addWidget(self.button_left_top, 1, 0, 1, 1)
 
         self.button_right_down = QPushButton(Form)
         self.button_right_down.setObjectName(u"button_right_down")
         sizePolicy1.setHeightForWidth(self.button_right_down.sizePolicy().hasHeightForWidth())
         self.button_right_down.setSizePolicy(sizePolicy1)
-        self.button_right_down.setFont(font1)
+        self.button_right_down.setFont(font2)
 
         self.gridLayout.addWidget(self.button_right_down, 4, 2, 1, 1)
 
@@ -177,7 +180,7 @@ class Ui_Form(object):
         self.button_home.setObjectName(u"button_home")
         sizePolicy1.setHeightForWidth(self.button_home.sizePolicy().hasHeightForWidth())
         self.button_home.setSizePolicy(sizePolicy1)
-        self.button_home.setFont(font1)
+        self.button_home.setFont(font2)
 
         self.gridLayout.addWidget(self.button_home, 2, 1, 1, 1)
 
@@ -195,9 +198,9 @@ class Ui_Form(object):
         self.button_zoom_out.setObjectName(u"button_zoom_out")
         sizePolicy1.setHeightForWidth(self.button_zoom_out.sizePolicy().hasHeightForWidth())
         self.button_zoom_out.setSizePolicy(sizePolicy1)
-        font2 = QFont()
-        font2.setPointSize(10)
-        self.button_zoom_out.setFont(font2)
+        font3 = QFont()
+        font3.setPointSize(10)
+        self.button_zoom_out.setFont(font3)
 
         self.horizontalLayout.addWidget(self.button_zoom_out)
 
@@ -205,9 +208,9 @@ class Ui_Form(object):
         self.label_zoom.setObjectName(u"label_zoom")
         sizePolicy1.setHeightForWidth(self.label_zoom.sizePolicy().hasHeightForWidth())
         self.label_zoom.setSizePolicy(sizePolicy1)
-        font3 = QFont()
-        font3.setPointSize(14)
-        self.label_zoom.setFont(font3)
+        font4 = QFont()
+        font4.setPointSize(11)
+        self.label_zoom.setFont(font4)
         self.label_zoom.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.horizontalLayout.addWidget(self.label_zoom)
@@ -216,7 +219,7 @@ class Ui_Form(object):
         self.button_zoom_in.setObjectName(u"button_zoom_in")
         sizePolicy1.setHeightForWidth(self.button_zoom_in.sizePolicy().hasHeightForWidth())
         self.button_zoom_in.setSizePolicy(sizePolicy1)
-        self.button_zoom_in.setFont(font2)
+        self.button_zoom_in.setFont(font3)
 
         self.horizontalLayout.addWidget(self.button_zoom_in)
 
@@ -229,10 +232,10 @@ class Ui_Form(object):
         self.label_active_follow_yaw.setObjectName(u"label_active_follow_yaw")
         sizePolicy1.setHeightForWidth(self.label_active_follow_yaw.sizePolicy().hasHeightForWidth())
         self.label_active_follow_yaw.setSizePolicy(sizePolicy1)
-        font4 = QFont()
-        font4.setPointSize(11)
-        font4.setBold(True)
-        self.label_active_follow_yaw.setFont(font4)
+        font5 = QFont()
+        font5.setPointSize(11)
+        font5.setBold(True)
+        self.label_active_follow_yaw.setFont(font5)
         self.label_active_follow_yaw.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
 
         self.horizontalLayout_4.addWidget(self.label_active_follow_yaw)
@@ -241,10 +244,10 @@ class Ui_Form(object):
         self.toggle_active_follow_yaw.setObjectName(u"toggle_active_follow_yaw")
         sizePolicy.setHeightForWidth(self.toggle_active_follow_yaw.sizePolicy().hasHeightForWidth())
         self.toggle_active_follow_yaw.setSizePolicy(sizePolicy)
-        self.toggle_active_follow_yaw.setMaximumSize(QSize(150, 58))
-        font5 = QFont()
-        font5.setPointSize(24)
-        self.toggle_active_follow_yaw.setFont(font5)
+        self.toggle_active_follow_yaw.setMaximumSize(QSize(110, 58))
+        font6 = QFont()
+        font6.setPointSize(24)
+        self.toggle_active_follow_yaw.setFont(font6)
         self.toggle_active_follow_yaw.setAutoFillBackground(False)
         self.toggle_active_follow_yaw.setIconSize(QSize(50, 50))
         self.toggle_active_follow_yaw.setCheckable(True)
@@ -261,7 +264,7 @@ class Ui_Form(object):
         self.label_active_motor.setObjectName(u"label_active_motor")
         sizePolicy1.setHeightForWidth(self.label_active_motor.sizePolicy().hasHeightForWidth())
         self.label_active_motor.setSizePolicy(sizePolicy1)
-        self.label_active_motor.setFont(font4)
+        self.label_active_motor.setFont(font5)
         self.label_active_motor.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
 
         self.horizontalLayout_3.addWidget(self.label_active_motor)
@@ -270,10 +273,10 @@ class Ui_Form(object):
         self.toggle_active_motor.setObjectName(u"toggle_active_motor")
         sizePolicy.setHeightForWidth(self.toggle_active_motor.sizePolicy().hasHeightForWidth())
         self.toggle_active_motor.setSizePolicy(sizePolicy)
-        self.toggle_active_motor.setMaximumSize(QSize(150, 58))
-        font6 = QFont()
-        font6.setPointSize(41)
-        self.toggle_active_motor.setFont(font6)
+        self.toggle_active_motor.setMaximumSize(QSize(110, 58))
+        font7 = QFont()
+        font7.setPointSize(41)
+        self.toggle_active_motor.setFont(font7)
         self.toggle_active_motor.setAutoFillBackground(False)
         self.toggle_active_motor.setIconSize(QSize(50, 50))
         self.toggle_active_motor.setCheckable(True)
@@ -289,7 +292,7 @@ class Ui_Form(object):
         self.label_active_osd.setObjectName(u"label_active_osd")
         sizePolicy1.setHeightForWidth(self.label_active_osd.sizePolicy().hasHeightForWidth())
         self.label_active_osd.setSizePolicy(sizePolicy1)
-        self.label_active_osd.setFont(font4)
+        self.label_active_osd.setFont(font5)
         self.label_active_osd.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
 
         self.horizontalLayout_5.addWidget(self.label_active_osd)
@@ -298,10 +301,10 @@ class Ui_Form(object):
         self.toggle_active_osd.setObjectName(u"toggle_active_osd")
         sizePolicy.setHeightForWidth(self.toggle_active_osd.sizePolicy().hasHeightForWidth())
         self.toggle_active_osd.setSizePolicy(sizePolicy)
-        self.toggle_active_osd.setMaximumSize(QSize(150, 58))
-        font7 = QFont()
-        font7.setPointSize(36)
-        self.toggle_active_osd.setFont(font7)
+        self.toggle_active_osd.setMaximumSize(QSize(110, 58))
+        font8 = QFont()
+        font8.setPointSize(36)
+        self.toggle_active_osd.setFont(font8)
         self.toggle_active_osd.setAutoFillBackground(False)
         self.toggle_active_osd.setStyleSheet(u"QPushButton:checked {\n"
 "    border: none;\n"
@@ -335,13 +338,13 @@ class Ui_Form(object):
         Form.setWindowTitle(QCoreApplication.translate("Form", u"\uce74\uba54\ub77c \uc81c\uc5b4", None))
         self.label.setText(QCoreApplication.translate("Form", u"\uce74\uba54\ub77c \uc774\ub3d9\uc18d\ub3c4", None))
         self.label_cam_speed.setText(QCoreApplication.translate("Form", u"100", None))
-        self.button_right_up.setText(QCoreApplication.translate("Form", u"\u2197", None))
-        self.button_up.setText(QCoreApplication.translate("Form", u"\u2191", None))
+        self.button_right_top.setText(QCoreApplication.translate("Form", u"\u2197", None))
+        self.button_top.setText(QCoreApplication.translate("Form", u"\u2191", None))
         self.button_left_down.setText(QCoreApplication.translate("Form", u"\u2199", None))
         self.button_right.setText(QCoreApplication.translate("Form", u"\u2192", None))
         self.button_left.setText(QCoreApplication.translate("Form", u"\u2190", None))
         self.button_down.setText(QCoreApplication.translate("Form", u"\u2193", None))
-        self.button_left_up.setText(QCoreApplication.translate("Form", u"\u2196", None))
+        self.button_left_top.setText(QCoreApplication.translate("Form", u"\u2196", None))
         self.button_right_down.setText(QCoreApplication.translate("Form", u"\u2198", None))
         self.button_home.setText(QCoreApplication.translate("Form", u"HOME", None))
         self.button_zoom_out.setText("")

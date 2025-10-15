@@ -13,15 +13,7 @@ from PySide6.QtWebChannel import QWebChannel
 # 위젯 모듈 임포트
 from widget.camera_md_data_widget import CameraMdDataWidget
 from widget.camera_control_widget import CameraControlWidget
-
-
-# ------------------------------
-# 설정 상수
-# ------------------------------
-SERVER_URL = "http://skysys.iptime.org:8000/mission_device_log/?name="
-TOKEN = "Token 8dd64a2d6c5f87da2078e0e09b4b99db29614537"
-DEVICE_NAME = "MD-2023-03-L"
-
+from protocol import Protocol
 
 # ------------------------------
 # WebChannel 핸들러
@@ -64,6 +56,8 @@ class MapApp(QMainWindow):
         self.right_container = None
         self.right_layout = None
 
+        self.protocol = Protocol()
+        
         self.setup_ui()
         self.setup_web_channel()
         self.setup_timer()
@@ -115,7 +109,13 @@ class MapApp(QMainWindow):
         path = os.path.abspath("map.html")
         self.web_view.load(QUrl.fromLocalFile(path))
         self.web_view.loadFinished.connect(self.on_load_finished)
-
+    # def post_connect_event(self):
+    #     """연결 이벤트 전송"""
+    #     self.protocol.post_event_message({
+    #         "cmd": "connect",
+    #         "mode": "",
+    #         "value": "",
+    #     })
     # --------------------------
     # 우측 위젯 표시 관련
     # --------------------------
@@ -168,29 +168,11 @@ class MapApp(QMainWindow):
     # --------------------------
     # 데이터 처리 관련
     # --------------------------
-    def get_mission_device_log(self):
-        """서버에서 디바이스 로그 데이터 요청"""
-        try:
-            url = SERVER_URL + DEVICE_NAME
-            headers = {
-                'Content-Type': 'application/json',
-                'charset': 'UTF-8',
-                'Accept': '*/*',
-                'Authorization': TOKEN,
-            }
-            response = requests.get(url, headers=headers)
 
-            if response.status_code == 200:
-                return response.json()
-            else:
-                print(f"⚠️ API 오류: {response.status_code}")
-        except Exception as e:
-            print(f"❌ API 요청 오류: {e}")
-        return None
 
     def update_device_data(self):
         """지도 및 위젯 데이터 업데이트"""
-        data = self.get_mission_device_log()
+        data = self.protocol.get_mission_device_log()
         if not data:
             return
 

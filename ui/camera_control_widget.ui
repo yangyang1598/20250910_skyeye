@@ -125,7 +125,7 @@ QPushButton:pressed {
        <item>
         <layout class="QGridLayout" name="gridLayout">
          <item row="1" column="2">
-          <widget class="QPushButton" name="button_right_up">
+          <widget class="QPushButton" name="button_right_top">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
              <horstretch>0</horstretch>
@@ -144,7 +144,7 @@ QPushButton:pressed {
           </widget>
          </item>
          <item row="1" column="1">
-          <widget class="QPushButton" name="button_up">
+          <widget class="QPushButton" name="button_top">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
              <horstretch>0</horstretch>
@@ -242,7 +242,7 @@ QPushButton:pressed {
           <layout class="QVBoxLayout" name="verticalLayout"/>
          </item>
          <item row="1" column="0">
-          <widget class="QPushButton" name="button_left_up">
+          <widget class="QPushButton" name="button_left_top">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
              <horstretch>0</horstretch>
@@ -399,7 +399,7 @@ QPushButton:pressed {
            </property>
            <property name="maximumSize">
             <size>
-             <width>150</width>
+             <width>110</width>
              <height>58</height>
             </size>
            </property>
@@ -461,7 +461,7 @@ QPushButton:pressed {
            </property>
            <property name="maximumSize">
             <size>
-             <width>150</width>
+             <width>110</width>
              <height>58</height>
             </size>
            </property>
@@ -523,7 +523,7 @@ QPushButton:pressed {
            </property>
            <property name="maximumSize">
             <size>
-             <width>150</width>
+             <width>110</width>
              <height>58</height>
             </size>
            </property>
