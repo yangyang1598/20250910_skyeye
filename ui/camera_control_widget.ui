@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>484</width>
-    <height>257</height>
+    <width>463</width>
+    <height>238</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -461,7 +461,7 @@ QPushButton:pressed {
            </property>
            <property name="maximumSize">
             <size>
-             <width>110</width>
+             <width>88</width>
              <height>58</height>
             </size>
            </property>
@@ -472,78 +472,6 @@ QPushButton:pressed {
            </property>
            <property name="autoFillBackground">
             <bool>false</bool>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-           <property name="iconSize">
-            <size>
-             <width>50</width>
-             <height>50</height>
-            </size>
-           </property>
-           <property name="checkable">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="0,0">
-         <item>
-          <widget class="QLabel" name="label_active_osd">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="font">
-            <font>
-             <pointsize>11</pointsize>
-             <bold>true</bold>
-            </font>
-           </property>
-           <property name="text">
-            <string>메뉴(OSD)</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="toggle_active_osd">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>110</width>
-             <height>58</height>
-            </size>
-           </property>
-           <property name="font">
-            <font>
-             <pointsize>36</pointsize>
-            </font>
-           </property>
-           <property name="autoFillBackground">
-            <bool>false</bool>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QPushButton:checked {
-    border: none;
-    image: url(&quot;D:/Downloads/switch-on.png&quot;);
-}
-QPushButton:!checked {
-    border: none;
-    image: url(&quot;D:/Downloads/switch-off.png&quot;);
-}</string>
            </property>
            <property name="text">
             <string/>

@@ -63,16 +63,6 @@ class CameraControlWidget(QWidget,Ui_Form):
             f"    image: url('{off_png_qss}');\n"
             "}"
         )
-        self.toggle_active_osd.setStyleSheet(
-            u"QPushButton:checked {\n"
-            "    border: none;\n"
-            f"    image: url('{on_png_qss}');\n"
-            "}\n"
-            "QPushButton:!checked {\n"
-            "    border: none;\n"
-            f"    image: url('{off_png_qss}');\n"
-            "}"
-        )
         self.button_zoom_in.setStyleSheet(
             u"QPushButton {\n"
         "    border: none;\n"
@@ -97,10 +87,15 @@ class CameraControlWidget(QWidget,Ui_Form):
         # 체크 가능 상태 유지
         self.toggle_active_follow_yaw.setCheckable(True)
         self.toggle_active_motor.setCheckable(True)
-        self.toggle_active_osd.setCheckable(True)
         self.button_zoom_in.setCheckable(True)
         self.button_zoom_out.setCheckable(True)
 
+        # 기본 상태 설정 및 토글 이벤트 연결
+        # 먼저 기본 체크 상태를 설정(시그널 연결 전에 해주면 초기 전송 방지)
+        self.toggle_active_motor.setChecked(True)
+        # 토글 변경 시 이벤트 전송
+        self.toggle_active_motor.toggled.connect(lambda checked: self.on_toggle_changed('motor', checked))
+        self.toggle_active_follow_yaw.toggled.connect(lambda checked: self.on_toggle_changed('follow_yaw', checked))
     def _wire_button_prints(self):
 
         for name in dir(self):
@@ -148,6 +143,24 @@ class CameraControlWidget(QWidget,Ui_Form):
             }
             time.sleep(0.1)
             self.protocol.post_event_message(self.stop_text)
+
+    def on_toggle_changed(self, name: str, checked: bool):
+        # 토글 변경에 따른 이벤트 전송
+        mode = "on" if checked else "off"
+        self.text = {
+            "cmd": name,
+            "mode": mode,
+            "value": "",
+        }
+        self.protocol.post_event_message(self.text)
+        if name=="follow_yaw":
+            self.save_text = {
+            "cmd": "save",
+            "mode": "",
+            "value": "",
+        }
+            time.sleep(0.1)
+            self.protocol.post_event_message(self.save_text)
 
 def main():
     app = QApplication(sys.argv)

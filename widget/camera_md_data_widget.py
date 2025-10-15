@@ -20,7 +20,7 @@ class CameraMdDataWidget(QWidget,Ui_Form):
         """데이터 업데이트 함수"""
         try:
             # Mission Device (MD) 데이터 업데이트
-            
+           
             if 'latitude' in data:
                 self.label_data_md_lat.setText(f"{float(data['latitude']):.6f}")
 
@@ -68,6 +68,7 @@ class CameraMdDataWidget(QWidget,Ui_Form):
             
             # 다이얼로그 제목 업데이트
             device_name = data.get('missiondevice_serial_number', 'Unknown Device')
+            self.label_title_md_location.setText(device_name)
             self.setWindowTitle(f"Camera Data - {device_name}")
                 
             # print(f"다이얼로그 데이터 업데이트 완료: {device_name}")

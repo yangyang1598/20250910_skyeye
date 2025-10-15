@@ -24,10 +24,6 @@ class Protocol:
         self.sse_stop_event = threading.Event()
         self.is_run_sse = False
         self.queue = Queue()
-        # SSE URL/핸들러 설정
-        self.sse_events_url_prefix = "http://skysys.iptime.org:8000/events/"
-        self.sse_default_url = f"{self.sse_events_url_prefix}{DEVICE_NAME}-GCS"
-        self.sse_event_handler = None
     def get_mission_device_log(self):
         """서버에서 디바이스 로그 데이터 요청"""
         try:
@@ -87,23 +83,17 @@ class Protocol:
         except Exception as e:
             print(f"❌ 이벤트 메시지 전송 요청 오류: {e}")
             return None
-    class SseEventArgs:
-        def __init__(self, obj):
-            self.obj = obj
-
     def set_sse_event_handler(self, handler):
         """SSE 이벤트 콜백 등록: handler(SseEventArgs)"""
         self.sse_event_handler = handler
-
-    def open_sse_stream(self, url=None):
+    def open_sse_stream(self):
         """SSE 스트림 오픈 (Authorization: Token ...) 후 백그라운드 스레드 시작"""
         headers = {
             'Accept': 'text/event-stream, */*',
             'Authorization': TOKEN,
         }
         self.sse_session = requests.Session()
-        target_url = url or self.sse_default_url
-        self.sse_response = self.sse_session.get(target_url, headers=headers, stream=True)
+        self.sse_response = self.sse_session.get(SSE_EVENTS_URL, headers=headers, stream=True)
         self.start_sse_event_thread(self.sse_response)
         return self.sse_response.raw
     def start_sse_event_thread(self, response):
@@ -135,44 +125,26 @@ class Protocol:
             self.sse_thread = None
             self.queue = Queue()
     def read_stream_forever(self, response):
-        """SSE 응답 스트림을 계속 읽어 큐에 적재 및 출력/콜백 호출"""
+        """SSE 응답 스트림을 계속 읽어 큐에 적재"""
         try:
-            for line in response.iter_lines(decode_unicode=True):
+            for chunk in response.iter_content(chunk_size=2048):
                 if self.sse_stop_event.is_set():
                     break
-                if not line:
+                if not chunk:
                     continue
-                # SSE 주석 라인은 건너뜀
-                if line.startswith(':'):
-                    continue
-                if line.startswith('data:'):
-                    payload = line[5:].strip()
-                    # 큐에 원문 적재
-                    self.push(payload)
-                    # JSON 파싱 시도
-                    try:
-                        obj = json.loads(payload)
-                    except Exception:
-                        obj = payload
-                    # 핸들러가 있으면 전달, 없으면 기본 출력
-                    if self.sse_event_handler:
-                        try:
-                            self.sse_event_handler(self.SseEventArgs(obj))
-                        except Exception:
-                            pass
-                    else:
-                        print(f"event:{obj}")
+                text = chunk.decode('utf-8', errors='ignore')
+                self.push(text)
         except Exception:
             pass
         finally:
             self.queue = Queue()
             self.is_run_sse = False
-    def request_event(self, name: str):
+    def request_event(self):
         """연결 재시도 루프: /events/{name}-GCS"""
         while not self.is_run_sse:
             try:
-                url = f"{self.sse_events_url_prefix}{name}-GCS"
-                self.open_sse_stream(url)
+                
+                self.open_sse_stream(SSE_EVENTS_URL)
                 self.is_run_sse = True
             except Exception:
                 time.sleep(2.0)

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'camera_control_widgetlGkKpX.ui'
+## Form generated from reading UI file 'camera_control_widgetvhEiaG.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -23,7 +23,7 @@ class Ui_Form(object):
     def setupUi(self, Form):
         if not Form.objectName():
             Form.setObjectName(u"Form")
-        Form.resize(484, 257)
+        Form.resize(463, 238)
         sizePolicy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -273,7 +273,7 @@ class Ui_Form(object):
         self.toggle_active_motor.setObjectName(u"toggle_active_motor")
         sizePolicy.setHeightForWidth(self.toggle_active_motor.sizePolicy().hasHeightForWidth())
         self.toggle_active_motor.setSizePolicy(sizePolicy)
-        self.toggle_active_motor.setMaximumSize(QSize(110, 58))
+        self.toggle_active_motor.setMaximumSize(QSize(88, 58))
         font7 = QFont()
         font7.setPointSize(41)
         self.toggle_active_motor.setFont(font7)
@@ -285,42 +285,6 @@ class Ui_Form(object):
 
 
         self.verticalLayout_4.addLayout(self.horizontalLayout_3)
-
-        self.horizontalLayout_5 = QHBoxLayout()
-        self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
-        self.label_active_osd = QLabel(Form)
-        self.label_active_osd.setObjectName(u"label_active_osd")
-        sizePolicy1.setHeightForWidth(self.label_active_osd.sizePolicy().hasHeightForWidth())
-        self.label_active_osd.setSizePolicy(sizePolicy1)
-        self.label_active_osd.setFont(font5)
-        self.label_active_osd.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
-
-        self.horizontalLayout_5.addWidget(self.label_active_osd)
-
-        self.toggle_active_osd = QPushButton(Form)
-        self.toggle_active_osd.setObjectName(u"toggle_active_osd")
-        sizePolicy.setHeightForWidth(self.toggle_active_osd.sizePolicy().hasHeightForWidth())
-        self.toggle_active_osd.setSizePolicy(sizePolicy)
-        self.toggle_active_osd.setMaximumSize(QSize(110, 58))
-        font8 = QFont()
-        font8.setPointSize(36)
-        self.toggle_active_osd.setFont(font8)
-        self.toggle_active_osd.setAutoFillBackground(False)
-        self.toggle_active_osd.setStyleSheet(u"QPushButton:checked {\n"
-"    border: none;\n"
-"    image: url(\"D:/Downloads/switch-on.png\");\n"
-"}\n"
-"QPushButton:!checked {\n"
-"    border: none;\n"
-"    image: url(\"D:/Downloads/switch-off.png\");\n"
-"}")
-        self.toggle_active_osd.setIconSize(QSize(50, 50))
-        self.toggle_active_osd.setCheckable(True)
-
-        self.horizontalLayout_5.addWidget(self.toggle_active_osd)
-
-
-        self.verticalLayout_4.addLayout(self.horizontalLayout_5)
 
 
         self.gridLayout_2.addLayout(self.verticalLayout_4, 0, 1, 1, 1)
@@ -354,7 +318,5 @@ class Ui_Form(object):
         self.toggle_active_follow_yaw.setText("")
         self.label_active_motor.setText(QCoreApplication.translate("Form", u"\ubaa8\ud130", None))
         self.toggle_active_motor.setText("")
-        self.label_active_osd.setText(QCoreApplication.translate("Form", u"\uba54\ub274(OSD)", None))
-        self.toggle_active_osd.setText("")
     # retranslateUi
 
