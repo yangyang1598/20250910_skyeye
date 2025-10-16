@@ -13,6 +13,7 @@ from PySide6.QtWebChannel import QWebChannel
 # 위젯 모듈 임포트
 from widget.camera_md_data_widget import CameraMdDataWidget
 from widget.camera_control_widget import CameraControlWidget
+from widget.bottom_widget import BottomWidget
 from protocol import Protocol
 
 # ------------------------------
@@ -36,7 +37,8 @@ class WebChannelHandler(QObject):
 
             print(f"📷 카메라 다이얼로그 데이터 수신: {type(data)}")
             self.main_window.show_camera_md_data_widget(data)
-            self.main_window.show_camera_control()
+            self.main_window.show_camera_control_widget()
+            self.main_window.show_bottom_widget()
 
         except Exception as e:
             print(f"❌ 카메라 다이얼로그 표시 오류: {e}")
@@ -55,6 +57,7 @@ class MapApp(QMainWindow):
         self.camera_control_widget = None
         self.right_container = None
         self.right_layout = None
+        self.bottom_widget = None
 
         self.protocol = Protocol()
         
@@ -83,6 +86,9 @@ class MapApp(QMainWindow):
         self.main_layout.addWidget(self.web_view, 0, 0)
         self.main_layout.setColumnStretch(0, 10)
         self.main_layout.setColumnStretch(1, 0)
+
+        self.main_layout.setRowStretch(0, 10)
+        self.main_layout.setRowStretch(1, 0)
 
         central_widget.setLayout(self.main_layout)
 
@@ -161,9 +167,8 @@ class MapApp(QMainWindow):
 
         self.camera_md_data_widget.show()
 
-    def show_camera_control(self):
+    def show_camera_control_widget(self):
         """카메라 제어 위젯 표시"""
-        self.ensure_right_container()
 
         if self.camera_control_widget and self.camera_control_widget.isVisible():
             self.camera_control_widget.hide()
@@ -174,7 +179,18 @@ class MapApp(QMainWindow):
             self.right_layout.addWidget(self.camera_control_widget)
 
         self.camera_control_widget.show()
+    def show_bottom_widget(self):
+        """하단 위젯 표시"""
 
+        if self.bottom_widget and self.bottom_widget.isVisible():
+            self.bottom_widget.hide()
+            return
+
+        if not self.bottom_widget:
+            self.bottom_widget = BottomWidget()
+            self.main_layout.addWidget(self.bottom_widget,1,0)
+
+        self.bottom_widget.show()
     # --------------------------
     # 데이터 처리 관련
     # --------------------------
