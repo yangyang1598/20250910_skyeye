@@ -3,8 +3,8 @@
 import sys
 import os
 import time
-from PySide6.QtWidgets import QApplication, QWidget
-from PySide6.QtWidgets import QAbstractButton
+from PySide6.QtWidgets import QApplication, QWidget,QAbstractButton,QSizePolicy
+
 # 상위 디렉토리의 ui 모듈을 import하기 위해 경로 추가
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
@@ -19,6 +19,8 @@ class CameraControlWidget(QWidget,Ui_Form):
         self.protocol=Protocol()
 
         self.setupUi(self)
+        # 원래 디자인(sizeHint) 기준으로 크기 고정
+        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         # 제어 토글 이미지 대입
         self.setting_toggle_icon() 
         # 카메라 속도 speed bar 설정

@@ -2,7 +2,7 @@
 
 import sys
 import os
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtWidgets import QApplication, QWidget,QSizePolicy
 import math
 # 상위 디렉토리의 ui 모듈을 import하기 위해 경로 추가
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -15,6 +15,9 @@ class CameraMdDataWidget(QWidget,Ui_Form):
     def __init__(self):
         super().__init__()
         self.setupUi(self)    
+        # 원래 디자인(sizeHint) 기준으로 크기 고정
+        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        
     
     def update_data(self, data):
         """데이터 업데이트 함수"""
