@@ -45,6 +45,10 @@ class WebChannelHandler(QObject):
             import traceback
             traceback.print_exc()
 
+    @Slot(float, float)
+    def updateCursorLatLng(self, lat, lng):
+        """JavaScript → Python: 마우스 커서 위젯 위치 업데이트"""
+        self.main_window.update_cursor_latlng(lat, lng)
 
 # ------------------------------
 # 메인 윈도우 클래스
@@ -57,7 +61,7 @@ class MapApp(QMainWindow):
         self.camera_control_widget = None
         self.right_container = None
         self.right_layout = None
-        self.bottom_widget = None
+        self.bottom_widget = BottomWidget()
 
         self.protocol = Protocol()
         
@@ -119,17 +123,16 @@ class MapApp(QMainWindow):
         self.web_view.loadFinished.connect(self.on_load_finished)
 
     def setup_sse_event(self):
-        # 핸들러 등록: C# SseEvent와 유사하게 obj 접근
-        self.protocol.set_sse_event_handler(
-            lambda e: print("event:" + str(e.obj))
-        )
+        # 핸들러 등록: handle_sse_event 메서드를 protocol의 self.sse_event_handler로 등록
+        #  sse_event_handler 값이 등록되는 경우 해당 함수 자동 호출
+        self.protocol.set_sse_event_handler(self.handle_sse_event)
 
         # 스트림 연결 시작
         self.protocol.open_sse_stream()
-        self.text={
-            "cmd":"connect",
-            "mode":"",
-            "value":""
+        self.text = {
+            "cmd": "connect",
+            "mode": "",
+            "value": ""
         }
         self.protocol.post_event_message(self.text)
     # --------------------------
@@ -179,18 +182,36 @@ class MapApp(QMainWindow):
             self.right_layout.addWidget(self.camera_control_widget)
 
         self.camera_control_widget.show()
+
+    # --------------------------
+    # 하단 위젯 표시 관련
+    # --------------------------
     def show_bottom_widget(self):
         """하단 위젯 표시"""
 
-        if self.bottom_widget and self.bottom_widget.isVisible():
-            self.bottom_widget.hide()
-            return
-
-        if not self.bottom_widget:
-            self.bottom_widget = BottomWidget()
+        if self.bottom_widget:
+            if self.bottom_widget.isVisible():
+                self.bottom_widget.hide()
+                return
+            self.bottom_widget.moveLocationRequested.connect(self.center_map_on_tracked)
             self.main_layout.addWidget(self.bottom_widget,1,0)
-
+            # 기존 데이터가 있으면 초기 동기화
+            if self.device_data:
+                self.bottom_widget.set_camera_pitch(self.device_data.get('camera_pitch'))
+            
         self.bottom_widget.show()
+    
+    def center_map_on_tracked(self):
+        """현재 추적 위치로 지도 중심 이동"""
+
+        js_code = """
+        if (typeof focusTracked === 'function') { focusTracked(); }
+        """
+        self.web_view.page().runJavaScript(js_code)
+        
+    def update_cursor_latlng(self, lat, lng):
+        if self.bottom_widget:
+            self.bottom_widget.set_location(lat, lng)
     # --------------------------
     # 데이터 처리 관련
     # --------------------------
@@ -209,6 +230,13 @@ class MapApp(QMainWindow):
         }}
         """
         self.web_view.page().runJavaScript(js_code)
+
+        # BottomWidget에 카메라 pitch 전달
+        if self.bottom_widget:
+            try:
+                self.bottom_widget.set_camera_pitch(data.get('camera_pitch'))
+            except Exception as e:
+                print(f"⚠️ BottomWidget pitch 업데이트 오류: {e}")
 
         if self.camera_md_data_widget and self.camera_md_data_widget.isVisible():
             try:
@@ -233,6 +261,15 @@ class MapApp(QMainWindow):
         else:
             print("❌ HTML 로딩 실패")
 
+    def handle_sse_event(self, data):
+        """SSE 이벤트 수신 처리: connect 포함 시 BottomWidget에서 출력"""
+        data=json.loads(data) #다시 dict 형식으로 변환
+        # print(f"main App {data},{type(data)},{data.get('cmd')},{isinstance(data, dict)}")
+       
+        if isinstance(data, dict) and data.get('cmd') == 'connect':
+            if self.bottom_widget:
+                self.bottom_widget.print_connect_cmd(data)
+            return
 
 # ------------------------------
 # 실행부
@@ -241,3 +278,5 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MapApp()
     sys.exit(app.exec())
+
+

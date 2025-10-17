@@ -101,7 +101,12 @@
         layer.on('click',ev=>{ hideMenus(); polyMenu.style.left=ev.containerPoint.x+"px"; polyMenu.style.top=ev.containerPoint.y+"px"; polyMenu.style.display="block"; currentPolygonId=id; currentPolygonLayer=layer; });
       }
     });
-
+    // 지도에서 마우스가 움직일 때 현재 좌표를 Python으로 전달
+    map.on('mousemove', function(e) {
+    if (window.pyHandler) {
+    window.pyHandler.updateCursorLatLng(e.latlng.lat, e.latlng.lng);
+    }
+    });
     // ─────────────────────────────────────
     // 추적 아이콘(방향/원/라인)
     const trackedLayerGroup=L.layerGroup().addTo(map);
@@ -157,7 +162,13 @@
       if(!tracked.rangeCircle) tracked.rangeCircle=L.circle(ll,{radius:1000,color:"#3388ff",weight:2,fillOpacity:0.1,renderer:canvasRenderer}).addTo(trackedLayerGroup);
       else tracked.rangeCircle.setLatLng(ll);
     }
-
+    // 현재 추적 위치로 지도 중심 이동
+    function focusTracked() {
+      if (tracked && tracked.latlng) {
+        map.setView(tracked.latlng, 15);
+        // 줌 15배로 고정
+      }
+    }
     // ─────────────────────────────────────
     // WebRTC 팝업
     let videoPopup=null;
@@ -202,7 +213,8 @@
       }
       if (!data.latitude || !data.longitude)
     {
-        console.warn(" GPS 좌표 수신 오류: GPS 센서 인식 실패");
+        console.info(" GPS 좌표 수신 오류: GPS 센서 인식 실패");
+        
       }
 
       const lat = parseFloat(data.latitude);
@@ -254,3 +266,7 @@
   </script>
 </body>
 </html>
+
+
+
+

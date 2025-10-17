@@ -52,7 +52,6 @@ class Ui_Form(object):
 "    padding-left: 2px;\n"
 "    /* (\uc120\ud0dd \uc0ac\ud56d) \ud14c\ub450\ub9ac\ub098 \uadf8\ub9bc\uc790 \ubcc0\ud654 */\n"
 "    border: 1px solid black;\n"
-"    box-shadow: inset 1px 1px 3px rgba(0,0,0,0.5); /* \uadf8\ub9bc\uc790 \uc548\ucabd\uc73c\ub85c */\n"
 "}")
         self.gridLayout_3 = QGridLayout(Form)
         self.gridLayout_3.setObjectName(u"gridLayout_3")

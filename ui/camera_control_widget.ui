@@ -52,7 +52,6 @@ QPushButton:pressed {
     padding-left: 2px;
     /* (선택 사항) 테두리나 그림자 변화 */
     border: 1px solid black;
-    box-shadow: inset 1px 1px 3px rgba(0,0,0,0.5); /* 그림자 안쪽으로 */
 }</string>
   </property>
   <layout class="QGridLayout" name="gridLayout_3">

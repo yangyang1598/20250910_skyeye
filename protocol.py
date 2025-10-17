@@ -24,6 +24,8 @@ class Protocol:
         self.sse_stop_event = threading.Event()
         self.is_run_sse = False
         self.queue = Queue()
+        self.sse_event_handler = None  # SSE 이벤트 콜백
+
     def get_mission_device_log(self):
         """서버에서 디바이스 로그 데이터 요청"""
         try:
@@ -58,12 +60,12 @@ class Protocol:
 
             # 상태 코드 확인
             if not response.ok:
-                print(f"⚠️ 이벤트 메시지 전송 오류: {response.status_code} raw={response.text[:200]}")
+                print(f"이벤트 메시지 전송 오류: {response.status_code} raw={response.text[:200]}")
                 return None
 
             raw = response.text
             if not raw or not raw.strip():
-                print("⚠️ 응답 본문이 비어있음(Empty body)")
+                print("응답 본문이 비어있음(Empty body)")
                 return None
 
             ctype = response.headers.get('Content-Type', '')
@@ -83,9 +85,11 @@ class Protocol:
         except Exception as e:
             print(f"❌ 이벤트 메시지 전송 요청 오류: {e}")
             return None
+
     def set_sse_event_handler(self, handler):
         """SSE 이벤트 콜백 등록: handler(SseEventArgs)"""
         self.sse_event_handler = handler
+
     def open_sse_stream(self):
         """SSE 스트림 오픈 (Authorization: Token ...) 후 백그라운드 스레드 시작"""
         headers = {
@@ -96,6 +100,7 @@ class Protocol:
         self.sse_response = self.sse_session.get(SSE_EVENTS_URL, headers=headers, stream=True)
         self.start_sse_event_thread(self.sse_response)
         return self.sse_response.raw
+        
     def start_sse_event_thread(self, response):
         """읽기 스레드 시작"""
         self.sse_stop_event.clear()
@@ -127,13 +132,56 @@ class Protocol:
     def read_stream_forever(self, response):
         """SSE 응답 스트림을 계속 읽어 큐에 적재"""
         try:
-            for chunk in response.iter_content(chunk_size=2048):
+            data_buf = []
+            event_type = None
+            event_id = None
+            for line in response.iter_lines(decode_unicode=True):
                 if self.sse_stop_event.is_set():
                     break
-                if not chunk:
+
+                if line is None:
                     continue
-                text = chunk.decode('utf-8', errors='ignore')
-                self.push(text)
+
+                # 이벤트 경계(빈 줄) 처리
+                if line == '':
+                    if data_buf:
+                        data_text = "\n".join(data_buf)
+
+                        # 문자열 분기 제거, 항상 dict로 파싱
+                        try:
+                            payload_obj = json.loads(data_text)
+                        except Exception as e:
+                            # print(f"❌ SSE JSON 파싱 오류: {e} raw={data_text[:200]}")
+                            # dict가 아니면 전달하지 않음
+                            payload_obj = None
+
+                        event = {"event": event_type, "id": event_id, "data": payload_obj}
+                        self.push(event)
+
+                        # 등록된 핸들러 즉시 호출 (dict 전달)
+                        if self.sse_event_handler and payload_obj is not None:
+                            try:
+                                self.sse_event_handler(payload_obj)
+                            except Exception as eh:
+                                print(f"❌ SSE handler error: {eh}")
+
+                    # 다음 이벤트를 위해 초기화
+                    data_buf = []
+                    event_type = None
+                    event_id = None
+                    continue
+
+                if line.startswith(':'):
+                    continue
+
+                if line.startswith('data:'):
+                    data_buf.append(line[len('data:'):].strip())
+                elif line.startswith('event:'):
+                    event_type = line[len('event:'):].strip()
+                elif line.startswith('id:'):
+                    event_id = line[len('id:'):].strip()
+                else:
+                    pass
         except Exception:
             pass
         finally:

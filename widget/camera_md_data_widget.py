@@ -9,7 +9,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from ui.ui_camera_md_data_widget import Ui_Form
 
-isIR=False #현재 하드코딩, 추후 서버 내 값 불러와서 설정정
+isIR=False #TODO: 현재 하드코딩, 추후 서버 내 값 불러와서 설정
 
 class CameraMdDataWidget(QWidget,Ui_Form):
     def __init__(self):

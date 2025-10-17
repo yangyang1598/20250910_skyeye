@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'bottom_widgetdkLWnY.ui'
+## Form generated from reading UI file 'bottom_widgetDoteLh.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -98,6 +98,10 @@ class Ui_Form(object):
 
         self.button_start_patrol = QPushButton(Form)
         self.button_start_patrol.setObjectName(u"button_start_patrol")
+        font1 = QFont()
+        font1.setUnderline(False)
+        self.button_start_patrol.setFont(font1)
+        self.button_start_patrol.setCheckable(True)
 
         self.verticalLayout.addWidget(self.button_start_patrol)
 

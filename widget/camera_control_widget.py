@@ -29,9 +29,12 @@ class CameraControlWidget(QWidget,Ui_Form):
         self._wire_button_prints()
 
     def display_cam_speed(self):
+        """카메라 속도 표시시 """
         self.label_cam_speed.setText(f"{self.horizontal_slider_cam_speed.value()}")
         
     def setting_toggle_icon(self):
+        """제어 토글 이미지 대입"""
+
         # Follow Yaw 토글 버튼 스타일 적용 (프로젝트 icon 폴더 경로 사용)
         icon_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'icon'))
         on_png = os.path.join(icon_dir, 'switch-on.png')
@@ -93,23 +96,22 @@ class CameraControlWidget(QWidget,Ui_Form):
         self.button_zoom_out.setCheckable(True)
 
         # 기본 상태 설정 및 토글 이벤트 연결
-        # 먼저 기본 체크 상태를 설정(시그널 연결 전에 해주면 초기 전송 방지)
         self.toggle_active_motor.setChecked(True)
         # 토글 변경 시 이벤트 전송
         self.toggle_active_motor.toggled.connect(lambda checked: self.on_toggle_changed('motor', checked))
         self.toggle_active_follow_yaw.toggled.connect(lambda checked: self.on_toggle_changed('follow_yaw', checked))
     def _wire_button_prints(self):
-
+        """버튼 클릭 이벤트 연결"""
         for name in dir(self):
             if name.startswith("button_"):
                 obj = getattr(self, name, None)
                 if isinstance(obj, QAbstractButton):
-                    # 'checked' 인자도 함께 받아서 시그널 시그니처와 일치시킵니다
                     obj.clicked.connect(lambda checked=False, n=name.replace("button_", ""): self.on_button_clicked(n, checked))
     def on_button_clicked(self, btn_name: str, checked: bool=False):
-        # 버튼 클릭 시 딕셔너리 생성 후 self.text에 저장
+        """버튼 클릭 이벤트 핸들러"""
+        # home, zoom, 방향키에 따른 딕셔너리 생성 후 self.text에 저장
         if "home" in btn_name:
-            #home 키 클릭릭
+            #home 키 클릭
             cmd=btn_name
             mode=""
             value=""
@@ -147,7 +149,7 @@ class CameraControlWidget(QWidget,Ui_Form):
             self.protocol.post_event_message(self.stop_text)
 
     def on_toggle_changed(self, name: str, checked: bool):
-        # 토글 변경에 따른 이벤트 전송
+        """토글 변경 이벤트 핸들러"""
         mode = "on" if checked else "off"
         self.text = {
             "cmd": name,
