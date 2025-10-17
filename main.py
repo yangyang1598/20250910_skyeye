@@ -3,7 +3,7 @@ import os
 import json
 import requests
 from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QGridLayout,QSpacerItem,QSizePolicy
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QGridLayout,QSpacerItem,QSizePolicy, QMessageBox
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtCore import QUrl, QTimer, QObject, Slot
@@ -195,6 +195,13 @@ class MapApp(QMainWindow):
                 return
             self.bottom_widget.moveLocationRequested.connect(self.center_map_on_tracked)
             self.main_layout.addWidget(self.bottom_widget,1,0)
+            # 기본적으로 round인 경우 알림창 송출되도록 설정
+            if getattr(self.bottom_widget, "radio_around_patrol", None) and self.bottom_widget.radio_around_patrol.isChecked():
+                    QMessageBox.information(
+                        self,
+                        "Round View",
+                        "현재 카메라 Yaw,Pitch 각도를 기준으로 작동합니다.\n (yaw 값은 ± 30º 주기적으로 변경,Pitch 값은 고정)"
+                    )
             # 기존 데이터가 있으면 초기 동기화
             if self.device_data:
                 self.bottom_widget.set_camera_pitch(self.device_data.get('camera_pitch'))

@@ -1,7 +1,7 @@
 import sys
 import os
 import time
-from PySide6.QtWidgets import QApplication, QWidget, QDialog
+from PySide6.QtWidgets import QApplication, QMessageBox, QWidget, QDialog
 from PySide6.QtCore import Signal
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -22,6 +22,8 @@ class BottomWidget(QWidget, Ui_Form):
 
         self.button_move_location.clicked.connect(self.on_click_move_location)
         self.button_start_patrol.clicked.connect(self.on_click_start_patrol)
+        # 라디오 변경 감지: 변할 때마다 정지 명령 전송 + 버튼 텍스트 초기화
+        self.radio_around_patrol.toggled.connect(self.on_radio_around_patrol_toggled)
         
     def on_click_move_location(self):
         """헬리카이트 위치 이동 버튼 클릭 시 위치 이동 신호 발생"""
@@ -50,9 +52,28 @@ class BottomWidget(QWidget, Ui_Form):
 
 
     def on_click_start_patrol(self):
-        """순찰 시작 중지 설정정"""
+        """순찰 시작 중지 설정"""
         if self.button_start_patrol.isChecked():
-            self.button_start_patrol.setText("순찰 중지")
+            if self.radio_around_patrol.isChecked() :
+                dialog = PopupPatrolDialog()
+                if dialog.exec() == QDialog.Accepted:
+                    self.button_start_patrol.setText("순찰 중지")
+                    pitch_value = self.current_camera_pitch if self.current_camera_pitch is not None else 0.0
+                    self.set_text = {
+                        "cmd": "round",
+                        "mode": "set",
+                        "value": { "yaw": "30", "pitch": f"{pitch_value:.2f}" }
+                    }
+                    self.protocol.post_event_message(self.set_text)
+                    time.sleep(0.1)
+                    self.start_text = {
+                        "cmd": "round",
+                        "mode": "start",
+                        "value": { "stay": f"{dialog.line_edit_patrol_second.text()}" }
+                    }
+                    self.protocol.post_event_message(self.start_text)
+                else:
+                    self.button_start_patrol.setChecked(False)
         else:
             self.stop_text = {
                     "cmd": "round",
@@ -64,27 +85,24 @@ class BottomWidget(QWidget, Ui_Form):
             self.protocol.post_event_message(self.stop_text)
             self.button_start_patrol.setText("순찰 시작")
 
-
-        if self.radio_around_patrol.isChecked() and self.button_start_patrol.isChecked():
-            """주변 순찰 모드"""
-            dialog = PopupPatrolDialog()
-            if dialog.exec() == QDialog.Accepted:
-                print(dialog.line_edit_patrol_second.text())
-                pitch_value = self.current_camera_pitch if self.current_camera_pitch is not None else 0.0
-                self.set_text = {
-                    "cmd": "round",
-                    "mode": "set",
-                    "value": { "yaw": "30", "pitch": f"{pitch_value:.2f}" }
-                }
-                self.protocol.post_event_message(self.set_text)
-                time.sleep(0.1)
-                self.start_text = {
-                    "cmd": "round",
-                    "mode": "start",
-                    "value": { "stay": f"{dialog.line_edit_patrol_second.text()}" }
-                }
-                self.protocol.post_event_message(self.start_text)
-
+    def on_radio_around_patrol_toggled(self, checked: bool):
+        # 라디오가 변할 때마다 실행 (필요시 if checked: 조건 추가)
+        self.stop_text = {
+            "cmd": "round",
+            "mode": "stop",
+            "value": ""
+        }
+        self.protocol.post_event_message(self.stop_text)
+        self.button_start_patrol.setText("순찰 시작")
+        self.button_start_patrol.setChecked(False)
+        # 위젯이 보이는 상태에서 체크되었을 때만 안내 문구 표시
+        if checked and self.isVisible():
+            QMessageBox.information(
+                self,
+                "Round View",
+                "현재 카메라 Yaw,Pitch 각도를 기준으로 작동합니다.\n (yaw 값은 ± 30º 주기적으로 변경,Pitch 값은 고정)"
+            )
+        
     def set_location(self, lat, lng):
         """마우스 커서 위치 위경도 정보 업데이트"""
         self.label_value_latitude.setText(f"{lat:.6f}")
