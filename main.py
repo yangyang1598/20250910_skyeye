@@ -14,6 +14,7 @@ from PySide6.QtWebChannel import QWebChannel
 from widget.camera_md_data_widget import CameraMdDataWidget
 from widget.camera_control_widget import CameraControlWidget
 from widget.bottom_widget import BottomWidget
+from dialog.mission_device_list_dialog import MissionDeviceListDialog
 from protocol import Protocol
 
 # ------------------------------
@@ -35,7 +36,7 @@ class WebChannelHandler(QObject):
             elif hasattr(data, 'toVariant'):
                 data = data.toVariant()
 
-            print(f"📷 카메라 다이얼로그 데이터 수신: {type(data)}")
+            # print(f"📷 카메라 다이얼로그 데이터 수신: {type(data)}")
             self.main_window.show_camera_md_data_widget(data)
             self.main_window.show_camera_control_widget()
             self.main_window.show_bottom_widget()
@@ -72,6 +73,7 @@ class MapApp(QMainWindow):
         
         self.load_map()
         self.setup_window()
+        self.setup_mission_device_list()
 
 
     # --------------------------
@@ -103,6 +105,7 @@ class MapApp(QMainWindow):
         self.channel.registerObject("pyHandler", self.handler)
         self.web_view.page().setWebChannel(self.channel)
 
+        
     def setup_timer(self):
         """주기적 데이터 갱신 타이머 설정"""
         self.timer = QTimer()
@@ -135,6 +138,12 @@ class MapApp(QMainWindow):
             "value": ""
         }
         self.protocol.post_event_message(self.text)
+    def setup_mission_device_list(self):
+        """미션 디바이스 목록 다이얼로그 설정"""
+        data=self.protocol.get_mission_device_list()
+        
+        self.mission_device_list_dialog = MissionDeviceListDialog(data)
+        self.mission_device_list_dialog.show()
     # --------------------------
     # 우측 위젯 표시 관련
     # --------------------------

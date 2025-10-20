@@ -9,9 +9,11 @@ from queue import Queue
 TOKEN = "Token 8dd64a2d6c5f87da2078e0e09b4b99db29614537"
 DEVICE_NAME = "MD-2023-03-L"
 
-MISSION_DEVICE_LOG_URL = "http://skysys.iptime.org:8000/mission_device_log/?name="
-EVENT_URL = "http://skysys.iptime.org:8000/messages/"
-SSE_EVENTS_URL_PREFIX = "http://skysys.iptime.org:8000/events/"
+SERVER_URL="http://skysys.iptime.org:8000"
+MISSION_DEVICE_LIST_URL = f"{SERVER_URL}/site/"
+MISSION_DEVICE_LOG_URL = f"{SERVER_URL}/mission_device_log/?name="
+EVENT_URL = f"{SERVER_URL}/messages/"
+SSE_EVENTS_URL_PREFIX = f"{SERVER_URL}/events/"
 SSE_EVENTS_URL = f"{SSE_EVENTS_URL_PREFIX}{DEVICE_NAME}-GCS"
 
 
@@ -26,6 +28,20 @@ class Protocol:
         self.queue = Queue()
         self.sse_event_handler = None  # SSE 이벤트 콜백
 
+    def get_mission_device_list(self):
+        headers = {
+            'Content-Type': 'application/json',
+            'charset': 'UTF-8',
+            'Accept': '*/*',
+            'Authorization': TOKEN,
+        }
+        response = requests.get(MISSION_DEVICE_LIST_URL, headers=headers)
+        if response.status_code == 200:
+            data=response.json()
+            # print(data)
+            return data
+        else:
+            print(f"⚠️ API 오류: {response.status_code}")
     def get_mission_device_log(self):
         """서버에서 디바이스 로그 데이터 요청"""
         try:
@@ -39,7 +55,9 @@ class Protocol:
             response = requests.get(url, headers=headers)
 
             if response.status_code == 200:
-                return response.json()
+                data=response.json()
+                print(data.get('date'),"!!!!!!!!") #TODO:!!!!date 출력해서 5분 지났는지 아닌지 비교하고 아닌 경우 print, 맞으면 return
+                return data
             else:
                 print(f"⚠️ API 오류: {response.status_code}")
         except Exception as e:
