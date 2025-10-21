@@ -112,7 +112,15 @@
     const trackedLayerGroup=L.layerGroup().addTo(map);
     const canvasRenderer=L.canvas({padding:0.5});
     let tracked={marker:null,latlng:null,heading:0,headingLine:null,cameraHeadingLine:null,rangeCircle:null}; //카메라 헤딩라인 추가
-
+    
+    function clearTracked() {
+      if (tracked.marker) { trackedLayerGroup.removeLayer(tracked.marker); tracked.marker = null; }
+      if (tracked.headingLine) { trackedLayerGroup.removeLayer(tracked.headingLine); tracked.headingLine = null; }
+      if (tracked.cameraHeadingLine) { trackedLayerGroup.removeLayer(tracked.cameraHeadingLine); tracked.cameraHeadingLine = null; }
+      if (tracked.rangeCircle) { trackedLayerGroup.removeLayer(tracked.rangeCircle); tracked.rangeCircle = null; }
+      tracked.latlng = null;
+      tracked.heading = 0;
+    }
     function destinationPoint(lat,lng,bearing,distance){
       const R=6371000; const brng=bearing*Math.PI/180; const φ1=lat*Math.PI/180; const λ1=lng*Math.PI/180; const δ=distance/R;
       const φ2=Math.asin(Math.sin(φ1)*Math.cos(δ)+Math.cos(φ1)*Math.sin(δ)*Math.cos(brng));
@@ -219,6 +227,13 @@
 
       const lat = parseFloat(data.latitude);
       const lng = parseFloat(data.longitude);
+      if (isNaN(lat) || isNaN(lng)) {
+        console.warn("GPS 좌표 무효: 추적 생성을 건너뜀");
+        clearTracked();
+        lastDroneData = data;
+        return;
+      }
+
       const yaw = parseFloat(data.yaw) || 0;
       const camera_yaw = parseFloat(data.camera_yaw); // 카메라 yaw 값 추출
       

@@ -7,7 +7,7 @@ from queue import Queue
 # 설정 상수
 # ------------------------------
 TOKEN = "Token 8dd64a2d6c5f87da2078e0e09b4b99db29614537"
-DEVICE_NAME = "MD-2023-03-L"
+DEVICE_NAME = "MD-2020-00-L"
 
 SERVER_URL="http://skysys.iptime.org:8000"
 MISSION_DEVICE_LIST_URL = f"{SERVER_URL}/site/"
@@ -45,6 +45,10 @@ class Protocol:
     def get_mission_device_log(self):
         """서버에서 디바이스 로그 데이터 요청"""
         try:
+            # 선택 취소/잘못된 선택 시 요청하지 않음
+            if not DEVICE_NAME:
+                return None
+
             url = MISSION_DEVICE_LOG_URL + DEVICE_NAME
             headers = {
                 'Content-Type': 'application/json',
@@ -56,10 +60,11 @@ class Protocol:
 
             if response.status_code == 200:
                 data=response.json()
-                print(data.get('date'),"!!!!!!!!") #TODO:!!!!date 출력해서 5분 지났는지 아닌지 비교하고 아닌 경우 print, 맞으면 return
+                # print(data.get('date'),"!!!!!!!!") #TODO:!!!!date 출력해서 5분 지났는지 아닌지 비교하고 아닌 경우 print, 맞으면 return
                 return data
             else:
                 print(f"⚠️ API 오류: {response.status_code}")
+                return None
         except Exception as e:
             print(f"❌ API 요청 오류: {e}")
         return None
@@ -114,8 +119,10 @@ class Protocol:
             'Accept': 'text/event-stream, */*',
             'Authorization': TOKEN,
         }
+        # DEVICE_NAME 최신값으로 URL을 매번 생성
+        url = f"{SSE_EVENTS_URL_PREFIX}{DEVICE_NAME}-GCS"
         self.sse_session = requests.Session()
-        self.sse_response = self.sse_session.get(SSE_EVENTS_URL, headers=headers, stream=True)
+        self.sse_response = self.sse_session.get(url, headers=headers, stream=True)
         self.start_sse_event_thread(self.sse_response)
         return self.sse_response.raw
         

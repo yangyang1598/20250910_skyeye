@@ -31,14 +31,33 @@ class MissionDeviceListDialog(QDialog, Ui_Dialog):
 
             serial = item.get('missiondevice_serial_number')
             if serial:
+                import widget.camera_md_data_widget as camera_md_data_widget_module
                 import protocol as protocol_module
+
+                camera_md_data_widget_module.TITLE_NAME = selected_name
+                
                 protocol_module.DEVICE_NAME = serial
+                protocol_module.IS_DEVICE_SELECTED = True
                 print(f"✅ DEVICE_NAME 변경: {serial}")
             else:
+                import protocol as protocol_module
+                protocol_module.DEVICE_NAME = ""
+                protocol_module.IS_DEVICE_SELECTED = False
                 print("⚠️ 선택 항목에 missiondevice_serial_number가 없습니다.")
         except Exception as e:
             print(f"❌ DEVICE_NAME 설정 중 오류: {e}")
         return super().accept()
+
+    def reject(self):
+        """취소 클릭 시: 추적 생성 중단을 위해 DEVICE_NAME 비활성화"""
+        try:
+            import protocol as protocol_module
+            protocol_module.DEVICE_NAME = ""
+            protocol_module.IS_DEVICE_SELECTED = False
+            print("❎ 선택 취소: 추적 생성 안 함")
+        except Exception as e:
+            print(f"❌ 취소 처리 중 오류: {e}")
+        return super().reject()
 def main():
     app = QApplication(sys.argv)
     dialog = MissionDeviceListDialog()

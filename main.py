@@ -62,14 +62,15 @@ class MapApp(QMainWindow):
         self.camera_control_widget = None
         self.right_container = None
         self.right_layout = None
-        self.bottom_widget = BottomWidget()
+        self.no_device_message_shown = False
+        self.connect_status = False
 
+        self.bottom_widget = BottomWidget()
         self.protocol = Protocol()
         
         self.setup_ui()
         self.setup_web_channel()
         self.setup_timer()
-        self.setup_sse_event()
         
         self.load_map()
         self.setup_window()
@@ -143,6 +144,9 @@ class MapApp(QMainWindow):
         data=self.protocol.get_mission_device_list()
         
         self.mission_device_list_dialog = MissionDeviceListDialog(data)
+        # 선택/취소 결과 연결
+        self.mission_device_list_dialog.accepted.connect(self.on_device_dialog_accepted)
+        self.mission_device_list_dialog.rejected.connect(self.on_device_dialog_rejected)
         self.mission_device_list_dialog.show()
     # --------------------------
     # 우측 위젯 표시 관련
@@ -237,7 +241,18 @@ class MapApp(QMainWindow):
         """지도 및 위젯 데이터 업데이트"""
         data = self.protocol.get_mission_device_log()
         if not data:
+            # 추적 제거 및 카메라 위젯 플레이스홀더 표시
+            js_code = """
+            if (typeof clearTracked === 'function') { clearTracked(); }
+            """
+            self.web_view.page().runJavaScript(js_code)
+            # 연결 없음 알림 (중복 방지)
+            if self.connect_status:
+                self.show_no_device_connected_message()
             return
+
+        # 정상 데이터 수신 시에는 다음 오류에 대비해 플래그 초기화
+        self.no_device_message_shown = False
 
         self.device_data = data
         js_code = f"""
@@ -280,12 +295,43 @@ class MapApp(QMainWindow):
     def handle_sse_event(self, data):
         """SSE 이벤트 수신 처리: connect 포함 시 BottomWidget에서 출력"""
         data=json.loads(data) #다시 dict 형식으로 변환
-        # print(f"main App {data},{type(data)},{data.get('cmd')},{isinstance(data, dict)}")
+        print(f"main App {data},{type(data)},{data.get('cmd')},{isinstance(data, dict)}")
        
         if isinstance(data, dict) and data.get('cmd') == 'connect':
             if self.bottom_widget:
                 self.bottom_widget.print_connect_cmd(data)
             return
+    
+    # --------------------------
+    # 사이트 선택 창 오류 처리
+    # --------------------------
+    def on_device_dialog_accepted(self):
+        """OK 후 유효한 시리얼이 설정되었는지 확인하고 SSE 재시작"""
+        import protocol as protocol_module
+        self.device_selection_resolved = True
+        if getattr(protocol_module, "DEVICE_NAME", ""):
+            # 새 DEVICE_NAME으로 SSE 재접속
+            self.setup_sse_event()
+        else:
+            self.show_no_device_connected_message()
+
+    def on_device_dialog_rejected(self):
+        """취소 클릭 시 알림 표시"""
+        self.device_selection_resolved = True
+        self.show_no_device_connected_message()
+
+    def show_no_device_connected_message(self):
+        """임무장비 연결 없음 안내 메시지 (한 번만 표시)"""
+        if self.no_device_message_shown:
+            return
+        QMessageBox.information(self, "알림", "연결된 임무장비 값이 없습니다")
+        self.no_device_message_shown = True
+
+        if self.camera_md_data_widget and self.camera_md_data_widget.isVisible():
+            try:
+                self.camera_md_data_widget.update_data(data)
+            except Exception as e:
+                print(f"⚠️ 다이얼로그 데이터 업데이트 오류: {e}")
 
 # ------------------------------
 # 실행부

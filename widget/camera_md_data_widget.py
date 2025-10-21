@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from pickle import NONE
 import sys
 import os
 from PySide6.QtWidgets import QApplication, QWidget,QSizePolicy
@@ -10,6 +11,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from ui.ui_camera_md_data_widget import Ui_Form
 
 isIR=False #TODO: 현재 하드코딩, 추후 서버 내 값 불러와서 설정
+TITLE_NAME=NONE
 
 class CameraMdDataWidget(QWidget,Ui_Form):
     def __init__(self):
@@ -70,9 +72,9 @@ class CameraMdDataWidget(QWidget,Ui_Form):
                 self.label_data_cam_zoom.setText(f"{camera_zoom}")
             
             # 다이얼로그 제목 업데이트
-            device_name = data.get('missiondevice_serial_number', 'Unknown Device')
-            self.label_title_md_location.setText(device_name)
-            self.setWindowTitle(f"Camera Data - {device_name}")
+
+            self.label_title_md_location.setText(TITLE_NAME)
+            self.setWindowTitle(f"Camera Data - {TITLE_NAME}")
                 
             # print(f"다이얼로그 데이터 업데이트 완료: {device_name}")
             
