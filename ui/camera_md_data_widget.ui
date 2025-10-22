@@ -46,7 +46,7 @@
        <property name="font">
         <font>
          <family>휴먼둥근헤드라인</family>
-         <pointsize>22</pointsize>
+         <pointsize>16</pointsize>
         </font>
        </property>
        <property name="text">

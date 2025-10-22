@@ -62,9 +62,48 @@
     ];
 
     // 지도 생성
-    const map = L.map('map',{center:[35.5396,129.3115],zoom:13});
+    const map = L.map('map',{center:[35.5770913,129.0988505],zoom:13});
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+    // 지정 좌표에 회색 원(circle) 기호 추가
+    const FireSensorCircleCoords = [
+      [35.565826,129.089228],
+      [35.563288,129.078184],
+      [35.585640,129.043495],
+      [35.587116,129.052429],
+      [35.567668,129.080136],
+      [35.569982,129.079617],
+      [35.578857,129.063614],
+      [35.575109,129.07410]
+    ];
+    FireSensorCircleCoords.forEach(([lat,lng], idx) => {
+      const circle = L.circle([lat, lng], {
+        radius: 100,
+        color: '#666',
+        weight: 1,
+        fillColor: '#808080',
+        fillOpacity: 1
+      }).addTo(map);
 
+      circle.on('click', (e) => {
+        // idx가 클릭된 센서의 배열 인덱스입니다.
+        console.log('FireSensor index:', idx);
+
+        // Qt 쪽으로 전달하고 싶다면(옵션)
+        if (window.pyHandler && window.pyHandler.onFireSensorClick) {
+          window.pyHandler.onFireSensorClick(idx, lat, lng);
+        }
+      });
+
+      // rangeCircle 추가 (반경 1000m) - 클릭 비활성화
+      L.circle([lat, lng], {
+        radius: 1000,
+        color: '#3388ff',
+        weight: 2,
+        fillColor: '#3388ff',
+        fillOpacity: 0.1,
+        interactive: false
+      }).addTo(map);
+    });
     // ─────────────────────────────────────
     // 드로잉/메뉴
     const drawnItems = new L.FeatureGroup().addTo(map);

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'camera_md_data_widgetEkvalr.ui'
+## Form generated from reading UI file 'camera_md_data_widgethAOVSE.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -44,7 +44,7 @@ class Ui_Form(object):
         self.label_title_md_location.setObjectName(u"label_title_md_location")
         font = QFont()
         font.setFamilies([u"\ud734\uba3c\ub465\uadfc\ud5e4\ub4dc\ub77c\uc778"])
-        font.setPointSize(22)
+        font.setPointSize(16)
         self.label_title_md_location.setFont(font)
 
         self.gridLayout.addWidget(self.label_title_md_location, 0, 0, 1, 1)

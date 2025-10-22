@@ -14,6 +14,7 @@ from PySide6.QtWebChannel import QWebChannel
 from widget.camera_md_data_widget import CameraMdDataWidget
 from widget.camera_control_widget import CameraControlWidget
 from widget.bottom_widget import BottomWidget
+from widget.fire_sensor_widget import FireSenSorWidget
 from dialog.mission_device_list_dialog import MissionDeviceListDialog
 from protocol import Protocol
 
@@ -39,7 +40,7 @@ class WebChannelHandler(QObject):
             # print(f"📷 카메라 다이얼로그 데이터 수신: {type(data)}")
             self.main_window.show_camera_md_data_widget(data)
             self.main_window.show_camera_control_widget()
-            self.main_window.show_bottom_widget()
+            self.main_window.show_bottom_widget(False)
 
         except Exception as e:
             print(f"❌ 카메라 다이얼로그 표시 오류: {e}")
@@ -50,6 +51,14 @@ class WebChannelHandler(QObject):
     def updateCursorLatLng(self, lat, lng):
         """JavaScript → Python: 마우스 커서 위젯 위치 업데이트"""
         self.main_window.update_cursor_latlng(lat, lng)
+
+    @Slot(int, float, float)
+    def onFireSensorClick(self, idx, lat, lng):
+        """JavaScript → Python: 산불센서 원 클릭 인덱스 및 좌표 출력"""
+        # print(f"🔥 FireSensor 클릭: index={idx}, lat={lat}, lng={lng}")
+        # fire sensor 위젯 표시 (카메라 두 위젯은 자동 숨김)
+        self.main_window.fire_sensor_widget.set_fire_sensor(index=idx)
+        self.main_window.show_fire_sensor_widget()
 
 # ------------------------------
 # 메인 윈도우 클래스
@@ -62,11 +71,17 @@ class MapApp(QMainWindow):
         self.camera_control_widget = None
         self.right_container = None
         self.right_layout = None
+        self.fire_sensor_widget = None
         self.no_device_message_shown = False
         self.connect_status = False
+        # bottom_widget 토글 상태 및 연결/안내 제어 플래그
+        self.bottom_toggle_state = False
+        self._bottom_move_connected = False
+        self.bottom_widget_alert_shown = False
 
         self.bottom_widget = BottomWidget()
         self.protocol = Protocol()
+        self.fire_sensor_widget = FireSenSorWidget()
         
         self.setup_ui()
         self.setup_web_channel()
@@ -164,8 +179,8 @@ class MapApp(QMainWindow):
         print(f"카메라 위젯 표시 - 데이터: {data}")
         self.ensure_right_container()
 
-        if self.camera_md_data_widget and self.camera_md_data_widget.isVisible():
-            self.camera_md_data_widget.hide()
+        self.hide_fire_sensor_widget()
+        if self.hide_camera_md_data_widget():
             return
 
         if not self.camera_md_data_widget:
@@ -181,45 +196,107 @@ class MapApp(QMainWindow):
         except Exception as e:
             print(f"⚠️ 카메라 데이터 업데이트 오류: {e}")
 
+        # 카메라 메타 데이터 위젯 표시
         self.camera_md_data_widget.show()
 
     def show_camera_control_widget(self):
         """카메라 제어 위젯 표시"""
+        self.ensure_right_container()
 
-        if self.camera_control_widget and self.camera_control_widget.isVisible():
-            self.camera_control_widget.hide()
+        self.hide_fire_sensor_widget()
+        if self.hide_camera_control_widget():
             return
 
         if not self.camera_control_widget:
             self.camera_control_widget = CameraControlWidget()
             self.right_layout.addWidget(self.camera_control_widget)
 
+        # 카메라 제어 위젯 표시
         self.camera_control_widget.show()
+    
+    def show_fire_sensor_widget(self):
+        """fire sensor 위젯 표시 (카메라 두 위젯은 숨김)"""
+        self.ensure_right_container()
+
+        if self.fire_sensor_widget.parent() is None:
+            self.right_layout.addWidget(self.fire_sensor_widget)
+
+        self.hide_camera_md_data_widget()
+        self.hide_camera_control_widget()
+
+        if self.hide_fire_sensor_widget():
+            return
+        
+        self.fire_sensor_widget.show()
+    
+    def hide_fire_sensor_widget(self):
+        """fire sensor 위젯 숨김"""
+        if self.fire_sensor_widget and self.fire_sensor_widget.isVisible():
+            self.fire_sensor_widget.hide()
+            return True
+        else:
+            return False
+
+    def hide_camera_md_data_widget(self):
+        """카메라 데이터 위젯 숨김"""
+        if self.camera_md_data_widget and self.camera_md_data_widget.isVisible():
+            self.camera_md_data_widget.hide()
+            return True
+        else:
+            return False
+
+    def hide_camera_control_widget(self):
+        """카메라 제어 위젯 숨김"""
+        if self.camera_control_widget and self.camera_control_widget.isVisible():
+            self.camera_control_widget.hide()
+            return True
+        else:
+            return False
+
+
 
     # --------------------------
     # 하단 위젯 표시 관련
     # --------------------------
-    def show_bottom_widget(self):
-        """하단 위젯 표시"""
+    def show_bottom_widget(self, skip=False):
+        """하단 위젯 표시/토글(초기 표시와 클릭 토글을 분리)"""
 
-        if self.bottom_widget:
-            if self.bottom_widget.isVisible():
-                self.bottom_widget.hide()
-                return
+        # 레이아웃 및 시그널 연결은 1회만
+        if not self._bottom_move_connected:
             self.bottom_widget.moveLocationRequested.connect(self.center_map_on_tracked)
-            self.main_layout.addWidget(self.bottom_widget,1,0)
-            # 기본적으로 round인 경우 알림창 송출되도록 설정
+            self._bottom_move_connected = True
+
+        if self.bottom_widget.parent() is None:
+            self.main_layout.addWidget(self.bottom_widget, 1, 0)
+
+        if not skip:
+            if not self.bottom_toggle_state:
+                # ON: 표시
+                if self.device_data:
+                    self.bottom_widget.set_camera_pitch(self.device_data.get('camera_pitch'))
+                self.bottom_widget.show()
+                self.bottom_toggle_state = True
+            else:
+                # OFF: 숨김
+                self.bottom_widget.hide()
+                self.bottom_toggle_state = False
+            return
+
+        # 초기 1회: 하단만 강제 표시 (토글 상태에는 영향 주지 않음)
+        if not self.bottom_widget_alert_shown:
             if getattr(self.bottom_widget, "radio_around_patrol", None) and self.bottom_widget.radio_around_patrol.isChecked():
-                    QMessageBox.information(
-                        self,
-                        "Round View",
-                        "현재 카메라 Yaw,Pitch 각도를 기준으로 작동합니다.\n (yaw 값은 ± 30º 주기적으로 변경,Pitch 값은 고정)"
-                    )
-            # 기존 데이터가 있으면 초기 동기화
-            if self.device_data:
-                self.bottom_widget.set_camera_pitch(self.device_data.get('camera_pitch'))
-            
+                QMessageBox.information(
+                    self,
+                    "Round View",
+                    "현재 카메라 Yaw,Pitch 각도를 기준으로 작동합니다.\n (yaw 값은 ± 30º 주기적으로 변경,Pitch 값은 고정)"
+                )
+            self.bottom_widget_alert_shown = True
+
+        if self.device_data:
+            self.bottom_widget.set_camera_pitch(self.device_data.get('camera_pitch'))
+
         self.bottom_widget.show()
+        # bottom_toggle_state는 초기 표시를 '무시'하도록 False 유지
     
     def center_map_on_tracked(self):
         """현재 추적 위치로 지도 중심 이동"""
@@ -312,6 +389,10 @@ class MapApp(QMainWindow):
         if getattr(protocol_module, "DEVICE_NAME", ""):
             # 새 DEVICE_NAME으로 SSE 재접속
             self.setup_sse_event()
+            # 정상 연결 시 최초 1회 하단만 강제 표시
+            self.show_bottom_widget(True)
+            # 클릭 토글 상태는 초기 표시를 '무시'하도록 False로 유지
+            self.bottom_toggle_state = False
         else:
             self.show_no_device_connected_message()
 
