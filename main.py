@@ -59,7 +59,7 @@ class WebChannelHandler(QObject):
         # print(f"🔥 FireSensor 클릭: index={idx}, lat={lat}, lng={lng}")
         # fire sensor 위젯 표시 (카메라 두 위젯은 자동 숨김)
         self.main_window.fire_sensor_widget.set_fire_sensor(index=idx)
-        self.main_window.show_fire_sensor_widget()
+        self.main_window.show_fire_sensor_widget(idx)
 
 # ------------------------------
 # 메인 윈도우 클래스
@@ -75,10 +75,14 @@ class MapApp(QMainWindow):
         self.fire_sensor_widget = None
         self.no_device_message_shown = False
         self.connect_status = False
+        self.prvious_sensor_index=None # 산불감지 송출 인덱스 저장
+        self.previous_gas_index=None # 산불감지 변화 저장
+
         # bottom_widget 토글 상태 및 연결/안내 제어 플래그
         self.bottom_toggle_state = False
         self._bottom_move_connected = False
         self.bottom_widget_alert_shown = False
+
 
         self.bottom_widget = BottomWidget()
         self.protocol = Protocol()
@@ -219,10 +223,10 @@ class MapApp(QMainWindow):
         # 카메라 제어 위젯 표시
         self.camera_control_widget.show()
     
-    def show_fire_sensor_widget(self):
+    def show_fire_sensor_widget(self,idx=None):
         """fire sensor 위젯 표시 (카메라 두 위젯은 숨김)"""
         self.ensure_right_container()
-
+    
         if self.fire_sensor_widget.parent() is None:
             self.right_layout.addWidget(self.fire_sensor_widget)
 
@@ -230,8 +234,11 @@ class MapApp(QMainWindow):
         self.hide_camera_control_widget()
 
         if self.hide_fire_sensor_widget():
-            return
-        
+            if idx !=self.previous_sensor_index:
+               pass
+            else:
+                return
+        self.previous_sensor_index=idx
         self.fire_sensor_widget.show()
     
     def hide_fire_sensor_widget(self):
@@ -364,6 +371,15 @@ class MapApp(QMainWindow):
         try:
             if self.fire_sensor_widget:
                 statuses = self.fire_sensor_widget.get_sensor_statuses()
+                _now_gas_index=[gas.get('gas_index') for gas in statuses]
+                if self.previous_gas_index:
+                    if any(self.previous_gas_index[i] != 100 and _now_gas_index[i] == 100 for i in range(len(_now_gas_index))):
+                        QMessageBox.warning(
+                            self,
+                            "Fire Sensor Alert",
+                            "산불감지 센서가 감지되었습니다."
+                        )
+                self.previous_gas_index=_now_gas_index
         except Exception as e:
             print(f"⚠️ FireSensor 상태 생성 오류: {e}")
 
