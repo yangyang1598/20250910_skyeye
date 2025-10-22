@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'fire_sensor_widgetDLgJAF.ui'
+## Form generated from reading UI file 'fire_sensor_widgetvUKPpX.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -175,25 +175,25 @@ class Ui_Form(object):
     def retranslateUi(self, Form):
         Form.setWindowTitle(QCoreApplication.translate("Form", u"Form", None))
         self.label_data_sensor_temp.setText(QCoreApplication.translate("Form", u"0.0", None))
-        self.label_title_sensor_flags.setText(QCoreApplication.translate("Form", u"\uc0c1\ud0dc \ud50c\ub798\uadf8", None))
+        self.label_title_sensor_flags.setText(QCoreApplication.translate("Form", u"\uc13c\uc11c \uc218\uc2e0 \uc0c1\ud0dc(flags)", None))
         self.label_data_sensor_pressure.setText(QCoreApplication.translate("Form", u"0.0", None))
         self.label_data_sensor_gas_index.setText(QCoreApplication.translate("Form", u"0", None))
         self.label_data_sensor_rh.setText(QCoreApplication.translate("Form", u"0.0", None))
-        self.label_title_sensor_temp.setText(QCoreApplication.translate("Form", u"\uc628\ub3c4(\uc12d\uc528)", None))
-        self.label_title_sensor_gas_index.setText(QCoreApplication.translate("Form", u"\uac00\uc2a4\uc9c0\uc218 ", None))
-        self.label_title_sensor_rh.setText(QCoreApplication.translate("Form", u"\uc0c1\ub300 \uc2b5\ub3c4", None))
-        self.label_title_sensor_pressure.setText(QCoreApplication.translate("Form", u"\uae30\uc555", None))
-        self.label_title_sensor_checksum.setText(QCoreApplication.translate("Form", u"\uccb4\ud06c\uc12c", None))
+        self.label_title_sensor_temp.setText(QCoreApplication.translate("Form", u"\uc628\ub3c4(\uc12d\uc528,temp)", None))
+        self.label_title_sensor_gas_index.setText(QCoreApplication.translate("Form", u"\ud654\uc7ac \uce21\uc815 \uc9c0\ud45c(gas_index)", None))
+        self.label_title_sensor_rh.setText(QCoreApplication.translate("Form", u"\uc0c1\ub300 \uc2b5\ub3c4(rh)", None))
+        self.label_title_sensor_pressure.setText(QCoreApplication.translate("Form", u"\uae30\uc555(pressure)", None))
+        self.label_title_sensor_checksum.setText(QCoreApplication.translate("Form", u"\uccb4\ud06c\uc12c(crc)", None))
         self.label_data_sensor_vcap.setText(QCoreApplication.translate("Form", u"3.5", None))
         self.label_title_mV.setText(QCoreApplication.translate("Form", u"mV", None))
         self.label_data_sensor_trend.setText(QCoreApplication.translate("Form", u"0", None))
         self.label_data_sensor_checksum.setText(QCoreApplication.translate("Form", u"0.0", None))
         self.label_title_degree_3.setText(QCoreApplication.translate("Form", u"\u00ba", None))
         self.label_data_sensor_flags.setText(QCoreApplication.translate("Form", u"0", None))
-        self.label_title_sensor_trend.setText(QCoreApplication.translate("Form", u"\uac00\uc2a4 \uc0c1\uc2b9 \ud50c\ub798\uadf8", None))
+        self.label_title_sensor_trend.setText(QCoreApplication.translate("Form", u"\uac00\uc2a4 \uc0c1\uc2b9 \ud50c\ub798\uadf8(trend)", None))
         self.label_title_hPa.setText(QCoreApplication.translate("Form", u"hPa", None))
         self.label_title_md_location.setText(QCoreApplication.translate("Form", u"\uc0b0\ubd88\uac10\uc9c0 \uc13c\uc11c", None))
-        self.label_title_sensor_vcap.setText(QCoreApplication.translate("Form", u"\ubc30\ud130\ub9ac \uc804\uc555", None))
+        self.label_title_sensor_vcap.setText(QCoreApplication.translate("Form", u"\ubc30\ud130\ub9ac \uc804\uc555(vcap)", None))
         self.label_title_percent_4.setText(QCoreApplication.translate("Form", u"%", None))
     # retranslateUi
 

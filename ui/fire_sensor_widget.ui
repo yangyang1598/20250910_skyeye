@@ -44,7 +44,7 @@
      <item row="8" column="0">
       <widget class="QLabel" name="label_title_sensor_flags">
        <property name="text">
-        <string>상태 플래그</string>
+        <string>센서 수신 상태(flags)</string>
        </property>
       </widget>
      </item>
@@ -90,35 +90,35 @@
      <item row="2" column="0">
       <widget class="QLabel" name="label_title_sensor_temp">
        <property name="text">
-        <string>온도(섭씨)</string>
+        <string>온도(섭씨,temp)</string>
        </property>
       </widget>
      </item>
      <item row="5" column="0">
       <widget class="QLabel" name="label_title_sensor_gas_index">
        <property name="text">
-        <string>가스지수 </string>
+        <string>화재 측정 지표(gas_index)</string>
        </property>
       </widget>
      </item>
      <item row="3" column="0">
       <widget class="QLabel" name="label_title_sensor_rh">
        <property name="text">
-        <string>상대 습도</string>
+        <string>상대 습도(rh)</string>
        </property>
       </widget>
      </item>
      <item row="4" column="0">
       <widget class="QLabel" name="label_title_sensor_pressure">
        <property name="text">
-        <string>기압</string>
+        <string>기압(pressure)</string>
        </property>
       </widget>
      </item>
      <item row="9" column="0">
       <widget class="QLabel" name="label_title_sensor_checksum">
        <property name="text">
-        <string>체크섬</string>
+        <string>체크섬(crc)</string>
        </property>
       </widget>
      </item>
@@ -207,7 +207,7 @@
      <item row="6" column="0">
       <widget class="QLabel" name="label_title_sensor_trend">
        <property name="text">
-        <string>가스 상승 플래그</string>
+        <string>가스 상승 플래그(trend)</string>
        </property>
       </widget>
      </item>
@@ -234,7 +234,7 @@
      <item row="7" column="0">
       <widget class="QLabel" name="label_title_sensor_vcap">
        <property name="text">
-        <string>배터리 전압</string>
+        <string>배터리 전압(vcap)</string>
        </property>
       </widget>
      </item>

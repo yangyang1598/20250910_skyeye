@@ -12,12 +12,13 @@ from PySide6.QtWebChannel import QWebChannel
 
 # 위젯 모듈 임포트
 from widget.camera_md_data_widget import CameraMdDataWidget
+import widget.camera_md_data_widget as camera_md_data_widget_module
 from widget.camera_control_widget import CameraControlWidget
 from widget.bottom_widget import BottomWidget
 from widget.fire_sensor_widget import FireSenSorWidget
 from dialog.mission_device_list_dialog import MissionDeviceListDialog
 from protocol import Protocol
-
+import protocol as protocol_module
 # ------------------------------
 # WebChannel 핸들러
 # ------------------------------
@@ -124,9 +125,13 @@ class MapApp(QMainWindow):
         
     def setup_timer(self):
         """주기적 데이터 갱신 타이머 설정"""
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.update_device_data)
-        self.timer.start(2000)  # 2초마다 업데이트
+        self.md_data_timer = QTimer()
+        self.md_data_timer.timeout.connect(self.update_device_data)
+        self.md_data_timer.start(2000)  # 2초마다 업데이트
+
+        self.sensor_status = QTimer()
+        self.sensor_status.timeout.connect(self.update_fire_sensor_circles)
+        self.sensor_status.start(2000)  # 2초마다 업데이트
 
     def setup_window(self):
         """윈도우 속성 설정"""
@@ -253,8 +258,6 @@ class MapApp(QMainWindow):
         else:
             return False
 
-
-
     # --------------------------
     # 하단 위젯 표시 관련
     # --------------------------
@@ -334,7 +337,7 @@ class MapApp(QMainWindow):
         self.device_data = data
         js_code = f"""
         if (typeof updateDroneData === 'function') {{
-            updateDroneData({json.dumps(data)});
+            updateDroneData({json.dumps(data)},{json.dumps(camera_md_data_widget_module.TITLE_NAME )});
         }}
         """
         self.web_view.page().runJavaScript(js_code)
@@ -355,6 +358,22 @@ class MapApp(QMainWindow):
     # --------------------------
     # 이벤트 핸들러
     # --------------------------
+    def update_fire_sensor_circles(self):
+        """센서 상태에 따라 지도 원 색상 업데이트"""
+        statuses = []
+        try:
+            if self.fire_sensor_widget:
+                statuses = self.fire_sensor_widget.get_sensor_statuses()
+        except Exception as e:
+            print(f"⚠️ FireSensor 상태 생성 오류: {e}")
+
+        js_code = f"""
+        if (typeof setFireSensorColors === 'function') {{
+            setFireSensorColors({json.dumps(statuses)});
+        }}
+        """
+        self.web_view.page().runJavaScript(js_code)
+
     def on_load_finished(self, ok):
         if ok:
             print("✅ HTML 로딩 완료!")
@@ -366,6 +385,11 @@ class MapApp(QMainWindow):
             """
             self.web_view.page().runJavaScript(js_init_code)
             self.update_device_data()
+            # 초기 산불센서 색상 적용
+            try:
+                self.update_fire_sensor_circles()
+            except Exception as e:
+                print(f"⚠️ FireSensor 색상 적용 오류: {e}")
         else:
             print("❌ HTML 로딩 실패")
 
@@ -384,8 +408,8 @@ class MapApp(QMainWindow):
     # --------------------------
     def on_device_dialog_accepted(self):
         """OK 후 유효한 시리얼이 설정되었는지 확인하고 SSE 재시작"""
-        import protocol as protocol_module
         self.device_selection_resolved = True
+
         if getattr(protocol_module, "DEVICE_NAME", ""):
             # 새 DEVICE_NAME으로 SSE 재접속
             self.setup_sse_event()

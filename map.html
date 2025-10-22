@@ -67,14 +67,15 @@
     // 지정 좌표에 회색 원(circle) 기호 추가
     const FireSensorCircleCoords = [
       [35.565826,129.089228],
-      [35.563288,129.078184],
+      [35.557858,129.031257],
       [35.585640,129.043495],
-      [35.587116,129.052429],
-      [35.567668,129.080136],
-      [35.569982,129.079617],
+      [35.583097,129.029397],
+      [35.609971,129.020138],
+      [35.552318,129.056796],
       [35.578857,129.063614],
-      [35.575109,129.07410]
+      [35.627928,129.040288]
     ];
+    const FireSensorCircles = [];
     FireSensorCircleCoords.forEach(([lat,lng], idx) => {
       const circle = L.circle([lat, lng], {
         radius: 100,
@@ -83,7 +84,10 @@
         fillColor: '#808080',
         fillOpacity: 1
       }).addTo(map);
-
+    
+      // Keep a reference for later color updates
+      FireSensorCircles[idx] = circle;
+    
       circle.on('click', (e) => {
         // idx가 클릭된 센서의 배열 인덱스입니다.
         console.log('FireSensor index:', idx);
@@ -104,6 +108,33 @@
         interactive: false
       }).addTo(map);
     });
+    function setFireSensorColors(statusList) {
+      if (!Array.isArray(statusList)) return;
+      statusList.forEach(item => {
+        const idx = item.index-1;
+        const flags = item.flags;
+        const gas = item.gas_index;
+
+        const c = FireSensorCircles[idx];
+        if (!c) return;
+
+        let stroke = '#666';
+        let fill = '#808080';
+
+        if (typeof flags === 'number' && flags !== 0) {
+          if (gas === 100) {
+            stroke = '#ff3b30';
+            fill = '#ff3b30';
+          } else {
+            stroke = '#34c759';
+            fill = '#34c759';
+          }
+        }
+
+        c.setStyle({ color: stroke, fillColor: fill });
+      });
+    }
+
     // ─────────────────────────────────────
     // 드로잉/메뉴
     const drawnItems = new L.FeatureGroup().addTo(map);
@@ -251,7 +282,7 @@
     let lastDroneData = null;
 
     // API 데이터를 받아서 지도 업데이트하는 함수 
-    function updateDroneData(data) {
+    function updateDroneData(data,deviceName) {
       console.log("임무장비 데이터 업데이트:", data);
       
       // 위도/경도가 유효한지 확인 
@@ -290,7 +321,7 @@
           } else {
             console.warn("Python handler not available");
           }
-          const droneTitle = `[${data.missiondevice_serial_number || 'Unknown'}]`;
+          const droneTitle = `${deviceName}`;
           
           //TODO: 추후 yaml 파일을 수정하여 매핑 값 제공하도록 설정 필요
           openVideoAt(L.latLng(lat, lng), droneTitle, 'drone_cam');
@@ -320,7 +351,6 @@
   </script>
 </body>
 </html>
-
 
 
 
