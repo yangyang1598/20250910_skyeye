@@ -77,6 +77,7 @@ class MapApp(QMainWindow):
         self.connect_status = False
         self.prvious_sensor_index=None # 산불감지 송출 인덱스 저장
         self.previous_gas_index=None # 산불감지 변화 저장
+        self.previous_flags_index=None # 산불감지 변화 저장
 
         # bottom_widget 토글 상태 및 연결/안내 제어 플래그
         self.bottom_toggle_state = False
@@ -371,15 +372,21 @@ class MapApp(QMainWindow):
         try:
             if self.fire_sensor_widget:
                 statuses = self.fire_sensor_widget.get_sensor_statuses()
+                _now_flags_index=[flag.get('flags') for flag in statuses]
                 _now_gas_index=[gas.get('gas_index') for gas in statuses]
-                if self.previous_gas_index:
-                    if any(self.previous_gas_index[i] != 100 and _now_gas_index[i] == 100 for i in range(len(_now_gas_index))):
-                        QMessageBox.warning(
-                            self,
-                            "Fire Sensor Alert",
-                            "산불감지 센서가 감지되었습니다."
-                        )
+
+                if self.previous_gas_index and self.previous_flags_index:
+                    if any(self.previous_gas_index[i] != 100 and _now_gas_index[i] == 100 and _now_flags_index[i]==1 for i in range(len(_now_gas_index))) or (any(self.previous_flags_index[i] != 1 and _now_flags_index[i] == 1 and _now_gas_index[i]==100 for i in range(len(_now_flags_index)))):
+                        js_msg = f"""
+                        if (typeof showTopMessage === 'function') {{
+                            showTopMessage({json.dumps("산불감지 센서가 감지되었습니다.")}, {{ duration: 3000, type: 'warn',size: 'large' }});
+                        }}
+                        """
+                        self.web_view.page().runJavaScript(js_msg)
+
+                self.previous_flags_index=_now_flags_index
                 self.previous_gas_index=_now_gas_index
+
         except Exception as e:
             print(f"⚠️ FireSensor 상태 생성 오류: {e}")
 

@@ -40,10 +40,35 @@
     .video-popup .leaflet-popup-content { margin:8px 10px; width:360px; }
     .video-popup video { width:100%; background:#000; border-radius:8px; }
   </style>
+  <style>
+    #topMessage {
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-8px);
+      background: rgba(0,0,0,0.78);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 6px;
+      box-shadow: 0 6px 18px rgba(0,0,0,.2);
+      z-index: 10000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 200ms ease, transform 200ms ease;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    #topMessage.show {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
 </head>
 
 <body>
   <div id="map"></div>
+  <div id="topMessage" aria-live="polite"></div>
 
   <!-- 메뉴들 -->
   <div id="ctxMenu">
@@ -177,6 +202,43 @@
     window.pyHandler.updateCursorLatLng(e.latlng.lat, e.latlng.lng);
     }
     });
+
+    // 상단 산불감지 메시지 표시 함수
+    let __topMsgTimer = null;
+    function showTopMessage(text, opts) {
+      const el = document.getElementById('topMessage');
+      const duration = (opts && opts.duration) ? opts.duration : 3000;
+      const type = (opts && opts.type) ? opts.type : 'info';
+      const size = (opts && opts.size) ? opts.size : 'medium';
+      el.textContent = text || '';
+
+      // 색상
+      let bg = 'rgba(0,0,0,0.78)';
+      if (type === 'warn') bg = '#ff3b30';
+      else if (type === 'success') bg = '#34c759';
+      else if (type === 'info') bg = 'rgba(0,0,0,0.78)';
+      el.style.background = bg;
+
+      // 크기 옵션
+      if (size === 'large') {
+        el.style.fontSize = '18px';
+        el.style.padding = '14px 18px';
+      } else if (size === 'small') {
+        el.style.fontSize = '13px';
+        el.style.padding = '6px 10px';
+      } else {
+        // medium (기본)
+        el.style.fontSize = '16px';
+        el.style.padding = '12px 16px';
+      }
+
+      el.classList.add('show');
+      if (__topMsgTimer) { clearTimeout(__topMsgTimer); }
+      __topMsgTimer = setTimeout(() => {
+        el.classList.remove('show');
+      }, duration);
+    }
+
     // ─────────────────────────────────────
     // 추적 아이콘(방향/원/라인)
     const trackedLayerGroup=L.layerGroup().addTo(map);
