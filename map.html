@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <title>Leaflet + Draw + Context Menu + Tracked + WebRTC</title>
+  <title>Leaflet + Draw + Context Menu + Tracked + WebRTC (Refactored)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Leaflet -->
@@ -13,14 +13,14 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
   <script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 
-  <!-- QWebChannel for Python communication -->
+  <!-- QWebChannel for Python communication (optional in Qt) -->
   <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
 
   <style>
     html, body, #map { height: 100%; margin: 0; }
     .leaflet-draw-toolbar { display: none; }
 
-    /* 컨텍스트 메뉴 */
+    /* 컨텍스트 / 마커 / 폴리곤 메뉴 */
     #ctxMenu, #markerMenu, #polyMenu{
       position:absolute; z-index:10000; display:none;
       background:#fff; border:1px solid #ccc; border-radius:8px;
@@ -33,14 +33,14 @@
     }
     #ctxMenu button:hover, #markerMenu button:hover, #polyMenu button:hover{ background:#f2f2f2; }
 
-    /* 비디오 팝업 */
+    /* 비디오 팝업 스타일 */
     .video-popup .leaflet-popup-content-wrapper {
       border-radius:10px; box-shadow:0 10px 24px rgba(0,0,0,.25);
     }
     .video-popup .leaflet-popup-content { margin:8px 10px; width:360px; }
     .video-popup video { width:100%; background:#000; border-radius:8px; }
-  </style>
-  <style>
+
+    /* 상단 메시지 */
     #topMessage {
       position: fixed;
       top: 12px;
@@ -80,73 +80,86 @@
   <div id="polyMenu"><button id="polyDeleteBtn">이 폴리곤 삭제</button></div>
 
   <script>
-    // ─────────────────────────────────────
-    // 설정
-    const MTX_ORIGIN = "http://192.168.88.42:8889"; // MediaMTX WebRTC
-    const CAMS = [
-      { id:"cam1", title:"cam1", lat:35.5396, lng:129.3115 }
-    ];
+  /**************************************************************************
+   * 설정
+   ***************************************************************************/
+  const MTX_ORIGIN = "http://192.168.88.44:8889"; // MediaMTX WebRTC
+  const CAMS = [{ id:"cam1", title:"cam1", lat:35.5396, lng:129.3115 }];
 
-    const COLORS = {
-      SENSOR_STROKE_DEFAULT: '#666',
-      SENSOR_FILL_DEFAULT: '#808080',
-      RED: '#ff3b30',
-      GREEN: '#34c759',
-      RANGE: '#3388ff',
-      BLUE: '#007AFF',
-      INFO_BG: 'rgba(0,0,0,0.78)',
-      DOT: '#111'
-    };
+  const COLORS = {
+    SENSOR_STROKE_DEFAULT: '#666',
+    SENSOR_FILL_DEFAULT: '#808080',
+    RED: '#ff3b30',
+    GREEN: '#34c759',
+    RANGE: '#3388ff',
+    BLUE: '#007AFF',
+    INFO_BG: 'rgba(0,0,0,0.78)',
+    DOT: '#111'
+  };
 
-    // 지도 생성
-    const map = L.map('map',{center:[35.5770913,129.0988505],zoom:13});
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
-    // 지정 좌표에 회색 원(circle) 기호 추가
-    const FireSensorCircleCoords = [
-      [35.565826,129.089228],
-      [35.557858,129.031257],
-      [35.585640,129.043495],
-      [35.583097,129.029397],
-      [35.609971,129.020138],
-      [35.552318,129.056796],
-      [35.578857,129.063614],
-      [35.627928,129.040288]
-    ];
+  // 센서 좌표
+  const FireSensorCircleCoords = [
+    [35.565826,129.089228],
+    [35.557858,129.031257],
+    [35.585640,129.043495],
+    [35.583097,129.029397],
+    [35.609971,129.020138],
+    [35.552318,129.056796],
+    [35.578857,129.063614],
+    [35.627928,129.040288]
+  ];
 
-    // 아이콘 마커 + 범위 원
-    const FireSensorMarkers = [];
-    const FireSensorRangeCircles = [];
-    let FireSensorStatuses = [];
+  /**************************************************************************
+   * 전역 상태
+   ***************************************************************************/
+  const map = L.map('map',{center:[35.5770913,129.0988505],zoom:13});
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
 
-    // 줌에 따른 아이콘 픽셀 크기
-    function iconPxForZoom(z) {
-      const base = 32; // zoom 13 기준 32px
-      const factor = Math.pow(1.12, z - 13); // 줌 당 12% 정도 증가
-      return Math.round(base * factor);
-    }
+  const FireSensorMarkers = [];         // L.Marker
+  const FireSensorRangeCircles = [];    // L.Circle
+  let FireSensorStatuses = [];          // 최근 상태 배열 (index 기준 주의)
+  let lastDroneData = null;
 
-    // 아이콘 교체 헬퍼 (중앙 앵커)
-    function setSensorMarkerIcon(marker, iconUrl) {
-      const size = iconPxForZoom(map.getZoom());
-      marker.setIcon(L.icon({
-        iconUrl: iconUrl,
-        iconSize: [size, size],
-        iconAnchor: [size / 2, size / 2]
-      }));
-    }
+  /**************************************************************************
+   * 유틸리티
+   ***************************************************************************/
+  function iconPxForZoom(z) {
+    const base = 32; // zoom 13 기준 32px
+    const factor = Math.pow(1.12, z - 13);
+    return Math.round(base * factor);
+  }
 
-    // 초기 생성 시 기본 아이콘을 fire.png로 지정 (옵션)
+  function safeParseFloat(v, defaultVal = 0) {
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : defaultVal;
+  }
+
+  /**************************************************************************
+   * 센서 마커 생성 및 상태 업데이트
+   ***************************************************************************/
+  function setSensorMarkerIcon(marker, iconUrl) {
+    if (!marker) return;
+    const size = iconPxForZoom(map.getZoom());
+    marker.setIcon(L.icon({
+      iconUrl: iconUrl,
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2]
+    }));
+  }
+
+  function initFireSensors() {
     FireSensorCircleCoords.forEach(([lat, lng], idx) => {
-      const marker = L.marker([lat, lng]).addTo(map);
-      setSensorMarkerIcon(marker, 'fire.png');
-      FireSensorMarkers[idx] = marker;
-    
-      marker.on('click', (e) => {
+      const m = L.marker([lat, lng]).addTo(map);
+      setSensorMarkerIcon(m, 'fire.png');
+      FireSensorMarkers[idx] = m;
+
+      m.on('click', () => {
         if (window.pyHandler && window.pyHandler.onFireSensorClick) {
-          window.pyHandler.onFireSensorClick(idx, lat, lng);
+          // Python handler(optional)
+          try { window.pyHandler.onFireSensorClick(idx, lat, lng); } catch(e){ console.warn(e); }
         }
       });
-    
+
       const range = L.circle([lat, lng], {
         radius: 1000,
         color: COLORS.RANGE,
@@ -157,340 +170,390 @@
       }).addTo(map);
       FireSensorRangeCircles[idx] = range;
     });
+  }
 
-    function setFireSensorColors(statusList) {
-      if (!Array.isArray(statusList)) return;
-    
-      // 줌 이벤트에서도 재사용할 수 있도록 마지막 상태 저장
-      FireSensorStatuses = statusList;
-    
-      statusList.forEach(item => {
-        const idx = item.index - 1;
-        const flags = item.flags;
-        const gas = item.gas_index;
+  /**
+   * 산불 감지 센서 표기
+   */
+  function setFireSensorColors(statusList) {
+    if (!Array.isArray(statusList)) return;
+    FireSensorStatuses = statusList;
 
-        const m = FireSensorMarkers[idx];
-        const range = FireSensorRangeCircles[idx]; // 생성 시 저장한 범위 원을 가져옴
-        if (!m) return;
+    statusList.forEach(item => {
+      if (!item || typeof item.index !== 'number') return;
+      const idx = item.index - 1;
+      const m = FireSensorMarkers[idx];
+      const range = FireSensorRangeCircles[idx];
+      if (!m) return;
 
-        // 아이콘 선택 로직 
-        let iconUrl;
+      const flags = Number(item.flags) || 0;
+      const gas = Number(item.gas_index) || 0;
+
+      let iconUrl = 'fire.png';
+      if (flags === 0) iconUrl = 'fire.png';
+      else if (flags === 1 && gas === 100) iconUrl = 'fire_on.png';
+      else iconUrl = 'fire_off.png';
+
+      setSensorMarkerIcon(m, iconUrl);
+
+      if (range) {
         if (flags === 0) {
-            iconUrl = 'fire.png';
+          range.setStyle({ color: COLORS.SENSOR_STROKE_DEFAULT, fillColor: COLORS.SENSOR_FILL_DEFAULT, fillOpacity: 0.20 });
         } else if (flags === 1 && gas === 100) {
-            iconUrl = 'fire_on.png';
+          range.setStyle({ color: COLORS.RED, fillColor: COLORS.RED, fillOpacity: 0.25 });
         } else {
-            iconUrl = 'fire_off.png';
+          range.setStyle({ color: COLORS.BLUE, fillColor: COLORS.BLUE, fillOpacity: 0.25 });
         }
-        setSensorMarkerIcon(m, iconUrl);
-        
-        // 범위 원 색상 + 채움 투명도 함께 적용
-        if (range) {
-            if (flags === 0) {
-                range.setStyle({ color: COLORS.SENSOR_STROKE_DEFAULT, fillColor: COLORS.SENSOR_FILL_DEFAULT, fillOpacity: 0.20 });
-            } else if (flags === 1 && gas === 100) {
-                range.setStyle({ color: COLORS.RED, fillColor: COLORS.RED, fillOpacity: 0.25 });
-            } else {
-                range.setStyle({ color: COLORS.BLUE, fillColor: COLORS.BLUE, fillOpacity: 0.25 });
-            }
-        }
+      }
+    });
+  }
 
+  // 줌 변경 시 아이콘 크기 다시 조정
+  map.on('zoomend', () => {
+    FireSensorMarkers.forEach((m, idx) => {
+      const st = FireSensorStatuses[idx];
+      let iconUrl = 'fire.png';
+      if (st) {
+        if (st.flags === 0) iconUrl = 'fire.png';
+        else if (st.flags === 1 && st.gas_index === 100) iconUrl = 'fire_on.png';
+        else iconUrl = 'fire_off.png';
+      }
+      setSensorMarkerIcon(m, iconUrl);
+    });
+  });
+
+  /**************************************************************************
+   * 추적 레이어 (tracked) - 임무장비 표시
+   ***************************************************************************/
+  const trackedLayerGroup = L.layerGroup().addTo(map);
+  const canvasRenderer = L.canvas({ padding: 0.5 });
+
+  let tracked = { marker: null, latlng: null, heading: 0, headingLine: null, cameraHeadingLine: null, rangeCircle: null };
+
+  function clearTracked() {
+    if (tracked.marker) trackedLayerGroup.removeLayer(tracked.marker);
+    if (tracked.headingLine) trackedLayerGroup.removeLayer(tracked.headingLine);
+    if (tracked.cameraHeadingLine) trackedLayerGroup.removeLayer(tracked.cameraHeadingLine);
+    if (tracked.rangeCircle) trackedLayerGroup.removeLayer(tracked.rangeCircle);
+    tracked = { marker: null, latlng: null, heading: 0, headingLine: null, cameraHeadingLine: null, rangeCircle: null };
+  }
+
+  function destinationPoint(lat, lng, bearing, distance) {
+    const R = 6371000;
+    const brng = bearing * Math.PI / 180;
+    const φ1 = lat * Math.PI / 180;
+    const λ1 = lng * Math.PI / 180;
+    const δ = distance / R;
+    const φ2 = Math.asin(Math.sin(φ1) * Math.cos(δ) + Math.cos(φ1) * Math.sin(δ) * Math.cos(brng));
+    const λ2 = λ1 + Math.atan2(Math.sin(brng) * Math.sin(δ) * Math.cos(φ1), Math.cos(δ) - Math.sin(φ1) * Math.sin(φ2));
+    return { lat: φ2 * 180 / Math.PI, lng: ((λ2 * 180 / Math.PI + 540) % 360) - 180 };
+  }
+
+  function makeHeadingIcon(deg = 0) {
+    const safe = (deg % 360 + 360) % 360;
+    return L.divIcon({
+      className: "",
+      iconSize: [28, 28],
+      iconAnchor: [14, 14],
+      html: `<div style="position:relative;width:30px;height:30px;">
+        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(1)">
+          <div style="width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:20px solid ${COLORS.RED};transform:rotate(${safe}deg);"></div>
+          <div style="position:absolute;left:50%;top:50%;width:8px;height:8px;border-radius:50%;background:${COLORS.DOT};transform:translate(-50%,-50%);"></div>
+        </div>
+      </div>`
+    });
+  }
+
+  /**
+   * upsertTracked({ lat, lng, heading, camera_yaw, onClick })
+   */
+  function upsertTracked({ lat, lng, heading = 0, camera_yaw = null, onClick = null }) {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      console.warn("Invalid tracked lat/lng", lat, lng);
+      return;
+    }
+    const ll = L.latLng(lat, lng);
+    const hdg = (heading % 360 + 360) % 360;
+
+    if (!tracked.marker) {
+      tracked.marker = L.marker(ll, { icon: makeHeadingIcon(hdg) }).addTo(trackedLayerGroup);
+      if (typeof onClick === 'function') tracked.marker.on('click', onClick);
+    } else {
+      tracked.marker.setLatLng(ll);
+      if (typeof onClick === 'function') {
+        tracked.marker.off('click');
+        tracked.marker.on('click', onClick);
+      }
+    }
+    tracked.marker.setIcon(makeHeadingIcon(hdg));
+    tracked.latlng = ll;
+    tracked.heading = hdg;
+
+    // heading line
+    const end = destinationPoint(lat, lng, hdg, 1000);
+    if (!tracked.headingLine) {
+      tracked.headingLine = L.polyline([ll, [end.lat, end.lng]], { color: COLORS.RED, weight: 3, renderer: canvasRenderer }).addTo(trackedLayerGroup);
+    } else {
+      tracked.headingLine.setLatLngs([ll, [end.lat, end.lng]]);
+    }
+
+    // camera heading line (optional)
+    if (camera_yaw !== null && camera_yaw !== undefined) {
+      const camHdg = (camera_yaw % 360 + 360) % 360;
+      const camEnd = destinationPoint(lat, lng, camHdg, 800);
+      if (!tracked.cameraHeadingLine) {
+        tracked.cameraHeadingLine = L.polyline([ll, [camEnd.lat, camEnd.lng]], {
+          color: COLORS.BLUE, weight: 2, dashArray: "5,4", renderer: canvasRenderer
+        }).addTo(trackedLayerGroup);
+      } else {
+        tracked.cameraHeadingLine.setLatLngs([ll, [camEnd.lat, camEnd.lng]]);
+      }
+    } else if (tracked.cameraHeadingLine) {
+      trackedLayerGroup.removeLayer(tracked.cameraHeadingLine);
+      tracked.cameraHeadingLine = null;
+    }
+
+    if (!tracked.rangeCircle) {
+      tracked.rangeCircle = L.circle(ll, { radius: 1000, color: COLORS.RANGE, weight: 2, fillOpacity: 0.1, renderer: canvasRenderer }).addTo(trackedLayerGroup);
+    } else {
+      tracked.rangeCircle.setLatLng(ll);
+    }
+  }
+
+  function focusTracked() {
+    if (tracked && tracked.latlng) {
+      map.setView(tracked.latlng, 15);
+    }
+  }
+
+  /**************************************************************************
+   * WebRTC (WHEP) - 간단한 구현
+   ***************************************************************************/
+  async function startWebRTC(videoEl, camId) {
+    if (!videoEl) return;
+    let pc = null;
+    try {
+      pc = new RTCPeerConnection();
+      pc.ontrack = (e) => { videoEl.srcObject = e.streams[0]; };
+      pc.oniceconnectionstatechange = () => {
+        if (pc && pc.iceConnectionState === 'failed') console.warn('ICE failed for', camId);
+      };
+
+      const offer = await pc.createOffer({ offerToReceiveVideo: true });
+      await pc.setLocalDescription(offer);
+      console.log("Local SDP created");
+
+      const resp = await fetch(`${MTX_ORIGIN}/${camId}/whep`, {
+        method: "POST",
+        body: pc.localDescription.sdp,
+        headers: { "Content-Type": "application/sdp" }
+      });
+
+      if (!resp.ok) throw new Error(`WHEP request failed ${resp.status}`);
+      const answerSDP = await resp.text();
+      await pc.setRemoteDescription({ type: "answer", sdp: answerSDP });
+      console.log("Remote SDP applied");
+    } catch (err) {
+      console.error("startWebRTC error:", err);
+      if (pc) try { pc.close(); } catch(e) {}
+    }
+  }
+
+  let videoPopup = null;
+  function openVideoAt(latlng, title, camId) {
+    if (videoPopup) map.closePopup(videoPopup);
+    const content = document.createElement('div');
+    content.innerHTML = `<div style="margin-bottom:6px;"><b>${title}</b></div><video autoplay playsinline muted controls></video>`;
+    videoPopup = L.popup({ className: 'video-popup', closeButton: true, offset: [14, -10] }).setLatLng(latlng).setContent(content).openOn(map);
+    const video = content.querySelector('video');
+    startWebRTC(video, camId);
+  }
+
+  /**************************************************************************
+   * 드로잉 & 컨텍스트 메뉴
+   ***************************************************************************/
+  const drawnItems = new L.FeatureGroup().addTo(map);
+  const drawOptions = {
+    draw: { polygon: true, marker: true, polyline: false, rectangle: false, circle: false, circlemarker: false },
+    edit: { featureGroup: drawnItems }
+  };
+  const drawControl = new L.Control.Draw(drawOptions); map.addControl(drawControl);
+
+  const markers = {}, polygons = {};
+  let lastCtxLatLng = null, currentMarkerId = null, currentPolygonId = null, currentPolygonLayer = null;
+
+  const ctxMenu = document.getElementById('ctxMenu'),
+        markerMenu = document.getElementById('markerMenu'),
+        polyMenu = document.getElementById('polyMenu');
+
+  function hideMenus(){ ctxMenu.style.display="none"; markerMenu.style.display="none"; polyMenu.style.display="none"; }
+
+  map.on('contextmenu', e => {
+    hideMenus();
+    lastCtxLatLng = e.latlng;
+    ctxMenu.style.left = e.containerPoint.x + "px";
+    ctxMenu.style.top = e.containerPoint.y + "px";
+    ctxMenu.style.display = "block";
+  });
+  ['click','movestart','zoomstart'].forEach(ev => map.on(ev, hideMenus));
+
+  document.getElementById('addMarkerBtn').onclick = () => {
+    hideMenus();
+    if (!lastCtxLatLng) return;
+    const id = `m_${Date.now()}`;
+    const m = L.marker(lastCtxLatLng).addTo(map);
+    m.on('click', ev => {
+      hideMenus();
+      markerMenu.style.left = ev.containerPoint.x + "px";
+      markerMenu.style.top = ev.containerPoint.y + "px";
+      markerMenu.style.display = "block";
+      currentMarkerId = id;
+    });
+    markers[id] = m;
+  };
+
+  document.getElementById('addPolygonBtn').onclick = () => { hideMenus(); new L.Draw.Polygon(map).enable(); };
+
+  document.getElementById('mkDeleteBtn').onclick = () => {
+    if (currentMarkerId && markers[currentMarkerId]) {
+      map.removeLayer(markers[currentMarkerId]);
+      delete markers[currentMarkerId];
+      currentMarkerId = null;
+    }
+    hideMenus();
+  };
+
+  document.getElementById('polyDeleteBtn').onclick = () => {
+    if (currentPolygonId && currentPolygonLayer) {
+      drawnItems.removeLayer(currentPolygonLayer);
+      delete polygons[currentPolygonId];
+      currentPolygonId = null; currentPolygonLayer = null;
+    }
+    hideMenus();
+  };
+
+  map.on(L.Draw.Event.CREATED, e => {
+    const layer = e.layer;
+    drawnItems.addLayer(layer);
+    if (e.layerType === 'polygon') {
+      const id = `p_${Date.now()}`;
+      polygons[id] = layer;
+      layer.on('click', ev => {
+        hideMenus();
+        polyMenu.style.left = ev.containerPoint.x + "px";
+        polyMenu.style.top = ev.containerPoint.y + "px";
+        polyMenu.style.display = "block";
+        currentPolygonId = id;
+        currentPolygonLayer = layer;
       });
     }
-    
-    // 줌 변경 시 현재 상태에 맞춰 크기만 다시 적용
-    map.on('zoomend', () => {
-      FireSensorMarkers.forEach((m, idx) => {
-        const st = FireSensorStatuses[idx];
+  });
 
-        let iconUrl = 'fire.png';
-        if (st) {
-            if (st.flags === 0) {
-                iconUrl = 'fire.png';
-            } else if (st.flags === 1 && st.gas_index === 100) {
-                iconUrl = 'fire_on.png';
-            } else {
-                iconUrl = 'fire_off.png';
-            }
+  // 마우스 위치를 Python (Qt) 에 전달
+  map.on('mousemove', function(e) {
+    if (window.pyHandler && typeof window.pyHandler.updateCursorLatLng === 'function') {
+      try { window.pyHandler.updateCursorLatLng(e.latlng.lat, e.latlng.lng); } catch (err) { console.warn(err); }
+    }
+  });
+
+  /**************************************************************************
+   * 상단 메시지 표시
+   ***************************************************************************/
+  let __topMsgCenterIndex = null;
+  function showTopMessage(text, opts = {}) {
+    const el = document.getElementById('topMessage');
+    const type = opts.type || 'info';
+    const size = opts.size || 'medium';
+    el.textContent = text || '';
+
+    const centerIdx = (typeof opts.centerSensorIndex === 'number') ? opts.centerSensorIndex : null;
+    __topMsgCenterIndex = centerIdx;
+
+    let bg = COLORS.INFO_BG;
+    if (type === 'warn') bg = COLORS.RED;
+    else if (type === 'success') bg = COLORS.GREEN;
+    el.style.background = bg;
+
+    if (size === 'large') { el.style.fontSize = '18px'; el.style.padding = '14px 18px'; }
+    else if (size === 'small') { el.style.fontSize = '13px'; el.style.padding = '6px 10px'; }
+    else { el.style.fontSize = '16px'; el.style.padding = '12px 16px'; }
+
+    el.classList.add('show');
+  }
+
+  document.getElementById('topMessage').addEventListener('click', () => {
+    const el = document.getElementById('topMessage');
+    if (__topMsgCenterIndex !== null) {
+      const coords = FireSensorCircleCoords[__topMsgCenterIndex];
+      if (coords) map.setView(coords, 15);
+    }
+    el.classList.remove('show');
+    __topMsgCenterIndex = null;
+  });
+
+  /**************************************************************************
+   * 드론/임무장비 데이터 업데이트 (외부에서 호출)
+   ***************************************************************************/
+  function updateDroneData(data, deviceName = "Drone") {
+    console.log("임무장비 데이터 업데이트:", data);
+    if (!data) return;
+
+    const lat = safeParseFloat(data.latitude, NaN);
+    const lng = safeParseFloat(data.longitude, NaN);
+    if (Number.isNaN(lat) || Number.isNaN(lng)) {
+      console.warn("GPS 좌표 무효: 추적 중지 또는 무시");
+      clearTracked();
+      lastDroneData = data;
+      return;
+    }
+
+    const yaw = safeParseFloat(data.yaw, 0);
+    const camera_yaw = (data.camera_yaw !== undefined && data.camera_yaw !== null) ? safeParseFloat(data.camera_yaw, null) : null;
+
+    upsertTracked({
+      lat: lat,
+      lng: lng,
+      heading: yaw,
+      camera_yaw: camera_yaw,
+      onClick: () => {
+        // Python 콜백 요청 (있다면)
+        if (window.pyHandler && typeof window.pyHandler.showCameraDialog === 'function') {
+          try { window.pyHandler.showCameraDialog(data); } catch(e){ console.warn(e); }
         }
-
-        setSensorMarkerIcon(m, iconUrl);
-      });
+        const title = deviceName || (data.missiondevice_serial_number || "Tracked Device");
+        openVideoAt(L.latLng(lat, lng), title, 'drone_cam');
+      }
     });
 
-    // 산불 센서 상태에 따른 색상 변경
-     if (typeof flags === 'number' && flags !== 0) {
-    if (gas === 100) {
-      m.setIcon(L.icon({ iconUrl: 'fire_on.png', iconSize: [50, 50], iconAnchor: [20, 20] }));
-    } else {
-      m.setIcon(L.icon({ iconUrl: 'fire_off.png', iconSize: [50, 50], iconAnchor: [20, 20] }));
+    // 첫 수신이면 중심 이동
+    if (!lastDroneData) {
+      map.setView([lat, lng], 15);
     }
-  }
-    // 순수 아이콘만 사용하므로 추가 테두리/배경 변경은 제거
-    // 필요 시 상태별 아이콘 파일로 교체: m.setIcon(L.icon({ iconUrl: 'fire.png', iconSize:[22,22], iconAnchor:[11,11] }))
-// ─────────────────────────────────────
-// 드로잉/메뉴
-const drawnItems = new L.FeatureGroup().addTo(map);
-const drawOptions = {
-  draw:{ polygon:true, marker:true, polyline:false, rectangle:false, circle:false, circlemarker:false },
-  edit:{ featureGroup: drawnItems }
-};
-const drawControl = new L.Control.Draw(drawOptions); map.addControl(drawControl);
-
-const markers = {}, polygons = {};
-let lastCtxLatLng=null, currentMarkerId=null, currentPolygonId=null, currentPolygonLayer=null;
-
-const ctxMenu=document.getElementById('ctxMenu'),
-      markerMenu=document.getElementById('markerMenu'),
-      polyMenu=document.getElementById('polyMenu');
-
-function hideMenus(){ ctxMenu.style.display="none"; markerMenu.style.display="none"; polyMenu.style.display="none"; }
-
-map.on('contextmenu', e=>{ hideMenus(); lastCtxLatLng=e.latlng; ctxMenu.style.left=e.containerPoint.x+"px"; ctxMenu.style.top=e.containerPoint.y+"px"; ctxMenu.style.display="block"; });
-['click','movestart','zoomstart'].forEach(ev=>map.on(ev,hideMenus));
-
-document.getElementById('addMarkerBtn').onclick=()=>{ hideMenus(); if(!lastCtxLatLng)return;
-  const id=`m_${Date.now()}`; const m=L.marker(lastCtxLatLng).addTo(map);
-  m.on('click',ev=>{ hideMenus(); markerMenu.style.left=ev.containerPoint.x+"px"; markerMenu.style.top=ev.containerPoint.y+"px"; markerMenu.style.display="block"; currentMarkerId=id; });
-  markers[id]=m;
-};
-document.getElementById('addPolygonBtn').onclick=()=>{ hideMenus(); new L.Draw.Polygon(map).enable(); };
-document.getElementById('mkDeleteBtn').onclick=()=>{ if(currentMarkerId){map.removeLayer(markers[currentMarkerId]);delete markers[currentMarkerId];} hideMenus(); };
-document.getElementById('polyDeleteBtn').onclick=()=>{ if(currentPolygonId&&currentPolygonLayer){ drawnItems.removeLayer(currentPolygonLayer); delete polygons[currentPolygonId];} hideMenus(); };
-
-map.on(L.Draw.Event.CREATED,e=>{
-  const layer=e.layer; drawnItems.addLayer(layer);
-  if(e.layerType==='polygon'){ const id=`p_${Date.now()}`; polygons[id]=layer;
-    layer.on('click',ev=>{ hideMenus(); polyMenu.style.left=ev.containerPoint.x+"px"; polyMenu.style.top=ev.containerPoint.y+"px"; polyMenu.style.display="block"; currentPolygonId=id; currentPolygonLayer=layer; });
-  }
-});
-// 지도에서 마우스가 움직일 때 현재 좌표를 Python으로 전달
-map.on('mousemove', function(e) {
-if (window.pyHandler) {
-window.pyHandler.updateCursorLatLng(e.latlng.lat, e.latlng.lng);
-}
-});
-
-// 상단 산불감지 메시지 표시 함수
-let __topMsgCenterIndex = null;
-function showTopMessage(text, opts) {
-  const el = document.getElementById('topMessage');
-  const type = (opts && opts.type) ? opts.type : 'info';
-  const size = (opts && opts.size) ? opts.size : 'medium';
-  el.textContent = text || '';
-
-  // 클릭 이동용 인덱스 저장
-  const centerIdx = (opts && typeof opts.centerSensorIndex === 'number') ? opts.centerSensorIndex : null;
-  __topMsgCenterIndex = centerIdx;
-
-  // 색상
-  let bg = COLORS.INFO_BG;
-  if (type === 'warn') bg = COLORS.RED;
-  else if (type === 'success') bg = COLORS.GREEN;
-  else if (type === 'info') bg = COLORS.INFO_BG;
-  el.style.background = bg;
-
-  // 크기 옵션
-  if (size === 'large') {
-    el.style.fontSize = '18px';
-    el.style.padding = '14px 18px';
-  } else if (size === 'small') {
-    el.style.fontSize = '13px';
-    el.style.padding = '6px 10px';
-  } else {
-    // medium (기본)
-    el.style.fontSize = '16px';
-    el.style.padding = '12px 16px';
-  }
-
-  // duration 자동닫힘 폐기: 클릭 시에만 닫힘
-  el.classList.add('show');
-}
-
-// 알림 클릭: 센서 위치로 이동 후 알림 닫기
-document.getElementById('topMessage').addEventListener('click', () => {
-  const el = document.getElementById('topMessage');
-  if (__topMsgCenterIndex !== null) {
-    const coords = FireSensorCircleCoords[__topMsgCenterIndex];
-    if (coords) { map.setView(coords, 15); }
-  }
-  el.classList.remove('show');
-  __topMsgCenterIndex = null;
-});
-// ─────────────────────────────────────
-// 추적 아이콘(방향/원/라인)
-const trackedLayerGroup=L.layerGroup().addTo(map);
-const canvasRenderer=L.canvas({padding:0.5});
-let tracked={marker:null,latlng:null,heading:0,headingLine:null,cameraHeadingLine:null,rangeCircle:null}; //카메라 헤딩라인 추가
-
-function clearTracked() {
-  if (tracked.marker) { trackedLayerGroup.removeLayer(tracked.marker); tracked.marker = null; }
-  if (tracked.headingLine) { trackedLayerGroup.removeLayer(tracked.headingLine); tracked.headingLine = null; }
-  if (tracked.cameraHeadingLine) { trackedLayerGroup.removeLayer(tracked.cameraHeadingLine); tracked.cameraHeadingLine = null; }
-  if (tracked.rangeCircle) { trackedLayerGroup.removeLayer(tracked.rangeCircle); tracked.rangeCircle = null; }
-  tracked.latlng = null;
-  tracked.heading = 0;
-}
-function destinationPoint(lat,lng,bearing,distance){
-  const R=6371000; const brng=bearing*Math.PI/180; const φ1=lat*Math.PI/180; const λ1=lng*Math.PI/180; const δ=distance/R;
-  const φ2=Math.asin(Math.sin(φ1)*Math.cos(δ)+Math.cos(φ1)*Math.sin(δ)*Math.cos(brng));
-  const λ2=λ1+Math.atan2(Math.sin(brng)*Math.sin(δ)*Math.cos(φ1),Math.cos(δ)-Math.sin(φ1)*Math.sin(φ2));
-  return {lat:φ2*180/Math.PI,lng:((λ2*180/Math.PI+540)%360)-180};
-}
-function makeHeadingIcon(deg=0){
-  const safe=(deg%360+360)%360;
-  return L.divIcon({className:"",iconSize:[28,28],iconAnchor:[14,14],
-    html:`<div style="position:relative;width:30px;height:30px;">
-      <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(1)">
-        <div style="width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:20px solid ${COLORS.RED};transform:rotate(${safe}deg);"></div>
-        <div style="position:absolute;left:50%;top:50%;width:8px;height:8px;border-radius:50%;background:${COLORS.DOT};transform:translate(-50%,-50%);"></div>
-      </div>
-    </div>`});
-}
-
-// 추적 아이콘 업데이트 (카메라 헤딩을 위한 camera_yaw 추가)
-function upsertTracked({lat,lng,heading,camera_yaw,onClick}){
-  const ll=L.latLng(lat,lng); const hdg=(heading%360+360)%360;
-  if(!tracked.marker){ tracked.marker=L.marker(ll,{icon:makeHeadingIcon(hdg)}).addTo(trackedLayerGroup).on("click",onClick); }
-  else { tracked.marker.setLatLng(ll); }
-  tracked.marker.setIcon(makeHeadingIcon(hdg));
-  tracked.latlng=ll; tracked.heading=hdg;
-  
-  // 임무장비 헤딩 라인 (빨간색)
-  const end=destinationPoint(lat,lng,hdg,1000);
-  if(!tracked.headingLine) tracked.headingLine=L.polyline([ll,[end.lat,end.lng]],{color:COLORS.RED,weight:3,renderer:canvasRenderer}).addTo(trackedLayerGroup);
-  else tracked.headingLine.setLatLngs([ll,[end.lat,end.lng]]);
-  
-  // 카메라 헤딩 라인 (파란색) 
-  if (camera_yaw !== undefined && camera_yaw !== null) {
-    const camHdg = (camera_yaw % 360 + 360) % 360;
-    const camEnd = destinationPoint(lat, lng, camHdg, 800);
-    if (!tracked.cameraHeadingLine) {
-      tracked.cameraHeadingLine = L.polyline([ll, [camEnd.lat, camEnd.lng]], {
-        color: COLORS.BLUE, 
-        weight: 2, 
-        dashArray: "5, 4",
-        renderer: canvasRenderer
-      }).addTo(trackedLayerGroup);
-    } else {
-      tracked.cameraHeadingLine.setLatLngs([ll, [camEnd.lat, camEnd.lng]]);
-    }
-  }
-  
-  if(!tracked.rangeCircle) tracked.rangeCircle=L.circle(ll,{radius:1000,color:COLORS.RANGE,weight:2,fillOpacity:0.1,renderer:canvasRenderer}).addTo(trackedLayerGroup);
-  else tracked.rangeCircle.setLatLng(ll);
-}
-// 현재 추적 위치로 지도 중심 이동
-function focusTracked() {
-  if (tracked && tracked.latlng) {
-    map.setView(tracked.latlng, 15);
-    // 줌 15배로 고정
-  }
-}
-// ─────────────────────────────────────
-// WebRTC 팝업
-let videoPopup=null;
-function openVideoAt(latlng,title,camId){
-  if(videoPopup) map.closePopup(videoPopup);
-  const content=document.createElement('div');
-  content.innerHTML=`<div><b>${title}</b></div><video autoplay playsinline muted controls></video>`;
-  videoPopup=L.popup({className:'video-popup',closeButton:true,offset:[14,-10]}).setLatLng(latlng).setContent(content).openOn(map);
-  const video=content.querySelector('video'); startWebRTC(video,camId);
-}
-async function startWebRTC(videoEl, camId){
-  const pc = new RTCPeerConnection();
-  pc.ontrack = (event) => { videoEl.srcObject = event.streams[0]; };
-
-  const offer = await pc.createOffer({offerToReceiveVideo:true});
-  await pc.setLocalDescription(offer);
-
-  console.log("Local SDP:", pc.localDescription.sdp); // ICE ufrag/pwd 확인
-
-  const resp = await fetch(`${MTX_ORIGIN}/${camId}/whep`, {
-    method: "POST",
-    body: pc.localDescription.sdp,   // 반드시 localDescription.sdp
-    headers: { "Content-Type": "application/sdp" }
-  });
-
-  const answerSDP = await resp.text();
-  await pc.setRemoteDescription({ type:"answer", sdp: answerSDP });
-}
-
-
-// ─────────────────────────────────────
-// API 데이터 처리 및 임무장비 추적 
-let lastDroneData = null;
-
-// API 데이터를 받아서 지도 업데이트하는 함수 
-function updateDroneData(data,deviceName) {
-  console.log("임무장비 데이터 업데이트:", data);
-  
-  // 위도/경도가 유효한지 확인 
-  if (typeof data.latitude !== 'number' || typeof data.longitude !== 'number') {
-    console.warn("GPS 좌표 수신 오류: 위도/경도가 숫자가 아닙니다.");
-  }
-  if (!data.latitude || !data.longitude)
-{
-    console.info(" GPS 좌표 수신 오류: GPS 센서 인식 실패");
-    
-  }
-
-  const lat = parseFloat(data.latitude);
-  const lng = parseFloat(data.longitude);
-  if (isNaN(lat) || isNaN(lng)) {
-    console.warn("GPS 좌표 무효: 추적 생성을 건너뜀");
-    clearTracked();
     lastDroneData = data;
-    return;
   }
 
-  const yaw = parseFloat(data.yaw) || 0;
-  const camera_yaw = parseFloat(data.camera_yaw); // 카메라 yaw 값 추출
-  
-  // 임무장비 추적 업데이트
-  upsertTracked({
-    lat: lat,
-    lng: lng,
-    heading: yaw,
-    camera_yaw: camera_yaw, // 카메라 헤딩 라인을 위한 camera_yaw 전달
-    onClick: () => {
-      // 임무장비 비디오 팝업 열기
-      if (window.pyHandler) {
-        window.pyHandler.showCameraDialog(data);
-        console.log("카메라 다이얼로그 표시 요청:", data.missiondevice_serial_number);
-      } else {
-        console.warn("Python handler not available");
+  /**************************************************************************
+   * 초기화
+   ***************************************************************************/
+  function init() {
+    initFireSensors();
+
+    // QWebChannel 초기화 (Qt 환경에서 pyHandler가 필요한 경우)
+    if (typeof QWebChannel !== 'undefined') {
+      try {
+        new QWebChannel(qt.webChannelTransport, (channel) => {
+          window.pyHandler = channel.objects.pyHandler || window.pyHandler;
+          console.log('QWebChannel connected', !!window.pyHandler);
+        });
+      } catch (err) {
+        console.warn("QWebChannel init failed:", err);
       }
-      const droneTitle = `${deviceName}`;
-      
-      //TODO: 추후 yaml 파일을 수정하여 매핑 값 제공하도록 설정 필요
-      openVideoAt(L.latLng(lat, lng), droneTitle, 'drone_cam');
     }
-  });
-  
-  // 지도 중심을 임무장비 위치로 이동 (첫 번째 데이터일 때만)
-  if (!lastDroneData) {
-    map.setView([lat, lng], 15);
+
+    // 줌 이벤트시 필요시 다른 동작 추가 가능
   }
-  
-  lastDroneData = data;
-}
 
-// ─────────────────────────────────────
-// 데모: 카메라 마커 + 추적
-// 데이터 연동 전 하드코딩
-// CAMS.forEach(c=>{
-// const m=L.marker([c.lat,c.lng]).addTo(map).bindTooltip(`${c.title}`);
-// m.on('click',ev=>openVideoAt(ev.latlng,c.title,c.id));
-// });
-// upsertTracked({lat:35.5396,lng:129.3115,heading:90,onClick:()=>openVideoAt(tracked.latlng,"Tracked 04L","04L")});
-// setInterval(()=>{ const cur=tracked.latlng; const hdg=(tracked.heading+20)%360;
-// upsertTracked({lat:cur.lat+0.00012*Math.cos(hdg*Math.PI/180),lng:cur.lng+0.00012*Math.sin(hdg*Math.PI/180),heading:hdg,onClick:()=>openVideoAt(tracked.latlng,"Tracked 04L","04L")});
-// },2000);
-
-</script>
+  init();
+  </script>
 </body>
 </html>
-
-
-
