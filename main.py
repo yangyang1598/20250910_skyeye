@@ -230,6 +230,10 @@ class MapApp(QMainWindow):
     
         if self.fire_sensor_widget.parent() is None:
             self.right_layout.addWidget(self.fire_sensor_widget)
+        
+        #산불 센서 위젯 송출 시 하단 바 숨김
+        self.bottom_widget.hide()
+        self.bottom_toggle_state=False
 
         self.hide_camera_md_data_widget()
         self.hide_camera_control_widget()
