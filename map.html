@@ -62,6 +62,7 @@
       opacity: 1;
       pointer-events: auto;
       transform: translateX(-50%) translateY(0);
+      cursor: pointer;
     }
   </style>
 </head>
@@ -271,13 +272,16 @@ window.pyHandler.updateCursorLatLng(e.latlng.lat, e.latlng.lng);
 });
 
 // 상단 산불감지 메시지 표시 함수
-let __topMsgTimer = null;
+let __topMsgCenterIndex = null;
 function showTopMessage(text, opts) {
   const el = document.getElementById('topMessage');
-  const duration = (opts && opts.duration) ? opts.duration : 3000;
   const type = (opts && opts.type) ? opts.type : 'info';
   const size = (opts && opts.size) ? opts.size : 'medium';
   el.textContent = text || '';
+
+  // 클릭 이동용 인덱스 저장
+  const centerIdx = (opts && typeof opts.centerSensorIndex === 'number') ? opts.centerSensorIndex : null;
+  __topMsgCenterIndex = centerIdx;
 
   // 색상
   let bg = COLORS.INFO_BG;
@@ -299,13 +303,20 @@ function showTopMessage(text, opts) {
     el.style.padding = '12px 16px';
   }
 
+  // duration 자동닫힘 폐기: 클릭 시에만 닫힘
   el.classList.add('show');
-  if (__topMsgTimer) { clearTimeout(__topMsgTimer); }
-  __topMsgTimer = setTimeout(() => {
-    el.classList.remove('show');
-  }, duration);
 }
 
+// 알림 클릭: 센서 위치로 이동 후 알림 닫기
+document.getElementById('topMessage').addEventListener('click', () => {
+  const el = document.getElementById('topMessage');
+  if (__topMsgCenterIndex !== null) {
+    const coords = FireSensorCircleCoords[__topMsgCenterIndex];
+    if (coords) { map.setView(coords, 15); }
+  }
+  el.classList.remove('show');
+  __topMsgCenterIndex = null;
+});
 // ─────────────────────────────────────
 // 추적 아이콘(방향/원/라인)
 const trackedLayerGroup=L.layerGroup().addTo(map);

@@ -380,10 +380,21 @@ class MapApp(QMainWindow):
                 _now_gas_index=[gas.get('gas_index') for gas in statuses]
 
                 if self.previous_gas_index and self.previous_flags_index:
-                    if any(self.previous_gas_index[i] != 100 and _now_gas_index[i] == 100 and _now_flags_index[i]==1 for i in range(len(_now_gas_index))) or (any(self.previous_flags_index[i] != 1 and _now_flags_index[i] == 1 and _now_gas_index[i]==100 for i in range(len(_now_flags_index)))):
+                    # 변화가 발생한 센서 인덱스 수집
+                    triggered_indices = [
+                        i for i in range(len(_now_gas_index))
+                        if (
+                            self.previous_gas_index[i] != 100 and _now_gas_index[i] == 100 and _now_flags_index[i] == 1
+                        ) or (
+                            self.previous_flags_index[i] != 1 and _now_flags_index[i] == 1 and _now_gas_index[i] == 100
+                        )
+                    ]
+                    # 센서별 개별 메시지 표시
+                    for idx in triggered_indices:
+                        message = f"{idx+1}번째 센서에서 산불이 감지되었습니다."
                         js_msg = f"""
                         if (typeof showTopMessage === 'function') {{
-                            showTopMessage({json.dumps("산불감지 센서가 감지되었습니다.")}, {{ duration: 3000, type: 'warn',size: 'large' }});
+                            showTopMessage({json.dumps(message)}, {{ type: 'warn', size: 'large', centerSensorIndex: {idx} }});
                         }}
                         """
                         self.web_view.page().runJavaScript(js_msg)
