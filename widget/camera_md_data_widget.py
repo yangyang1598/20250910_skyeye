@@ -81,6 +81,23 @@ class CameraMdDataWidget(QWidget,Ui_Form):
         except Exception as e:
             print(f"다이얼로그 데이터 업데이트 오류: {e}")
 
+    def set_no_data(self):
+        """NO DATA 상태: 모든 값을 '-'로 표시"""
+        try:
+            self.label_data_md_lat.setText("-")
+            self.label_data_md_lng.setText("-")
+            self.label_data_md_alt.setText("-")
+            self.label_data_md_roll.setText("-")
+            self.label_data_md_pitch.setText("-")
+            self.label_data_md_yaw.setText("-")
+
+            self.label_data_cam_roll.setText("-")
+            self.label_data_cam_pitch.setText("-")
+            self.label_data_cam_yaw.setText("-")
+            self.label_data_cam_zoom.setText("-")
+        except Exception as e:
+            print(f"⚠️ NO DATA 표시 오류: {e}")
+
 def main():
     app = QApplication(sys.argv)
     

@@ -1,7 +1,7 @@
 import sys
 import os
 import json
-import requests
+from datetime import datetime,timedelta,timezone
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QGridLayout,QSpacerItem,QSizePolicy, QMessageBox
 )
@@ -75,6 +75,7 @@ class MapApp(QMainWindow):
         self.fire_sensor_widget = None
         self.no_device_message_shown = False
         self.connect_status = False
+        self.no_data_message_shown = False
         self.prvious_sensor_index=None # 산불감지 송출 인덱스 저장
         self.previous_gas_index=None # 산불감지 변화 저장
         self.previous_flags_index=None # 산불감지 변화 저장
@@ -338,12 +339,48 @@ class MapApp(QMainWindow):
             if (typeof clearTracked === 'function') { clearTracked(); }
             """
             self.web_view.page().runJavaScript(js_code)
-            # 연결 없음 알림 (중복 방지)
-            if self.connect_status:
-                self.show_no_device_connected_message()
             return
+        data_date=data.get('date')
+        data_date = datetime.fromisoformat(data_date)
+        now = datetime.now(timezone(timedelta(hours=9)))
+        five_minutes_ago = now - timedelta(minutes=5)
+        if data_date >= five_minutes_ago:
+            if self.camera_md_data_widget and self.camera_md_data_widget.isVisible():
+                try:
+                    self.camera_md_data_widget.update_data(data)
+                except Exception as e:
+                    print(f"⚠️ 다이얼로그 데이터 업데이트 오류: {e}")
+            if hasattr(self.bottom_widget, "set_interactive_enabled"):
+                self.bottom_widget.set_interactive_enabled(True)
+            else:
+                try:
+                    self.bottom_widget.button_move_location.setEnabled(True)
+                    self.bottom_widget.button_start_patrol.setEnabled(True)
+                    self.bottom_widget.radio_around_patrol.setEnabled(True)
+                except Exception as e:
+                    print(f"⚠️ 하단 위젯 활성화 오류: {e}")
+        else:
+                if self.camera_md_data_widget:
+                    try:
+                        self.camera_md_data_widget.set_no_data()
+                    except Exception as e:
+                        print(f"⚠️ 카메라 데이터 '-' 표시 오류: {e}")
 
-        # 정상 데이터 수신 시에는 다음 오류에 대비해 플래그 초기화
+                # 하단 위젯 표시 + 비활성화
+                if hasattr(self.bottom_widget, "set_interactive_enabled"):
+                    self.bottom_widget.set_interactive_enabled(False)
+                else:
+                    try:
+                        self.bottom_widget.button_move_location.setEnabled(False)
+                        self.bottom_widget.button_start_patrol.setEnabled(False)
+                        self.bottom_widget.radio_around_patrol.setEnabled(False)
+                    except Exception as e:
+                        print(f"⚠️ 하단 위젯 비활성화 오류: {e}")
+
+        
+
+        # 정상 연결 시 최초 1회 하단만 강제 표시
+        self.show_bottom_widget(True)
         self.no_device_message_shown = False
 
         self.device_data = data
@@ -361,11 +398,6 @@ class MapApp(QMainWindow):
             except Exception as e:
                 print(f"⚠️ BottomWidget pitch 업데이트 오류: {e}")
 
-        if self.camera_md_data_widget and self.camera_md_data_widget.isVisible():
-            try:
-                self.camera_md_data_widget.update_data(data)
-            except Exception as e:
-                print(f"⚠️ 다이얼로그 데이터 업데이트 오류: {e}")
 
     # --------------------------
     # 이벤트 핸들러
@@ -451,8 +483,6 @@ class MapApp(QMainWindow):
         if getattr(protocol_module, "DEVICE_NAME", ""):
             # 새 DEVICE_NAME으로 SSE 재접속
             self.setup_sse_event()
-            # 정상 연결 시 최초 1회 하단만 강제 표시
-            self.show_bottom_widget(True)
             # 클릭 토글 상태는 초기 표시를 '무시'하도록 False로 유지
             self.bottom_toggle_state = False
         else:

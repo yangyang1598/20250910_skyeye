@@ -36,7 +36,7 @@ class FireSenSorWidget(QWidget, Ui_Form):
     def set_fire_sensor(self,index=None) :
         """산불센서 리스트를 UI에 설정"""
         gas_index_config={
-            0:"정상",
+            0:"기타",
             100:"산불",
             200:"산 안개"
         }

@@ -60,7 +60,6 @@ class Protocol:
 
             if response.status_code == 200:
                 data=response.json()
-                # print(data.get('date'),"!!!!!!!!") #TODO:!!!!date 출력해서 5분 지났는지 아닌지 비교하고 아닌 경우 print, 맞으면 return
                 return data
             else:
                 print(f"⚠️ API 오류: {response.status_code}")

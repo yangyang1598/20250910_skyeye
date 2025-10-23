@@ -34,6 +34,14 @@ class BottomWidget(QWidget, Ui_Form):
             self.current_camera_pitch = float(pitch) if pitch is not None else None
         except (ValueError, TypeError):
             self.current_camera_pitch = None
+    def set_interactive_enabled(self, enabled: bool):
+        """버튼/라디오 등의 인터랙션 가능 여부 설정"""
+        try:
+            self.button_move_location.setEnabled(enabled)
+            self.button_start_patrol.setEnabled(enabled)
+            self.radio_around_patrol.setEnabled(enabled)
+        except Exception as e:
+            print(f"⚠️ 하단 위젯 인터랙션 설정 오류: {e}")
     def print_connect_cmd(self, cmd: str):
         """Protocol에서 받은 connect 데이터 출력"""
         self.poi_status=cmd.get("value").get("poi")
