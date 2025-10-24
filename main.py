@@ -16,9 +16,14 @@ import widget.camera_md_data_widget as camera_md_data_widget_module
 from widget.camera_control_widget import CameraControlWidget
 from widget.bottom_widget import BottomWidget
 from widget.fire_sensor_widget import FireSenSorWidget
+from widget.ir_camera_set_widget import IRCameraSetWidget
 from dialog.mission_device_list_dialog import MissionDeviceListDialog
 from protocol import Protocol
 import protocol as protocol_module
+
+
+isIR=False 
+
 # ------------------------------
 # WebChannel 핸들러
 # ------------------------------
@@ -41,6 +46,8 @@ class WebChannelHandler(QObject):
             # print(f"📷 카메라 다이얼로그 데이터 수신: {type(data)}")
             self.main_window.show_camera_md_data_widget(data)
             self.main_window.show_camera_control_widget()
+            if isIR:
+                self.main_window.show_ir_camera_set_widget()
             self.main_window.show_bottom_widget(False)
 
         except Exception as e:
@@ -68,13 +75,10 @@ class MapApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.device_data = None
-        self.camera_md_data_widget = None
-        self.camera_control_widget = None
         self.right_container = None
         self.right_layout = None
         self.fire_sensor_widget = None
         self.no_device_message_shown = False
-        self.connect_status = False
         self.no_data_message_shown = False
         self.prvious_sensor_index=None # 산불감지 송출 인덱스 저장
         self.previous_gas_index=None # 산불감지 변화 저장
@@ -84,12 +88,8 @@ class MapApp(QMainWindow):
         self.bottom_toggle_state = False
         self._bottom_move_connected = False
         self.bottom_widget_alert_shown = False
-
-
-        self.bottom_widget = BottomWidget()
-        self.protocol = Protocol()
-        self.fire_sensor_widget = FireSenSorWidget()
         
+        self.init_widget()
         self.setup_ui()
         self.setup_web_channel()
         self.setup_timer()
@@ -102,6 +102,15 @@ class MapApp(QMainWindow):
     # --------------------------
     # 초기화 관련 메서드
     # --------------------------
+    def init_widget(self):
+        self.camera_md_data_widget = None
+        self.camera_control_widget = None
+        self.ir_camera_set_widget = IRCameraSetWidget()
+
+        self.bottom_widget = BottomWidget()
+        self.protocol = Protocol()
+        self.fire_sensor_widget = FireSenSorWidget()
+
     def setup_ui(self):
         """메인 UI 설정"""
         central_widget = QWidget()
@@ -203,7 +212,7 @@ class MapApp(QMainWindow):
             self.right_layout.addItem(self.horizontalSpacer)
 
         try:
-            self.camera_md_data_widget.update_data(data)
+            self.camera_md_data_widget.update_data(data,isIR)
         except Exception as e:
             print(f"⚠️ 카메라 데이터 업데이트 오류: {e}")
 
@@ -246,7 +255,21 @@ class MapApp(QMainWindow):
                 return
         self.previous_sensor_index=idx
         self.fire_sensor_widget.show()
-    
+
+    def show_ir_camera_set_widget(self):
+        """IR 카메라 설정 위젯 표시"""
+        self.ensure_right_container()
+
+        self.hide_fire_sensor_widget()
+        if self.hide_ir_camera_set_widget():
+            return
+
+        if self.ir_camera_set_widget.parent() is None:
+            self.right_layout.addWidget(self.ir_camera_set_widget)
+        
+        self.ir_camera_set_widget.show()
+
+
     def hide_fire_sensor_widget(self):
         """fire sensor 위젯 숨김"""
         if self.fire_sensor_widget and self.fire_sensor_widget.isVisible():
@@ -267,6 +290,14 @@ class MapApp(QMainWindow):
         """카메라 제어 위젯 숨김"""
         if self.camera_control_widget and self.camera_control_widget.isVisible():
             self.camera_control_widget.hide()
+            return True
+        else:
+            return False
+
+    def hide_ir_camera_set_widget(self):
+        """IR 카메라 설정 위젯 숨김"""
+        if self.ir_camera_set_widget and self.ir_camera_set_widget.isVisible():
+            self.ir_camera_set_widget.hide()
             return True
         else:
             return False
@@ -347,7 +378,7 @@ class MapApp(QMainWindow):
         if data_date >= five_minutes_ago:
             if self.camera_md_data_widget and self.camera_md_data_widget.isVisible():
                 try:
-                    self.camera_md_data_widget.update_data(data)
+                    self.camera_md_data_widget.update_data(data,isIR)
                 except Exception as e:
                     print(f"⚠️ 다이얼로그 데이터 업데이트 오류: {e}")
             if hasattr(self.bottom_widget, "set_interactive_enabled"):
@@ -471,22 +502,34 @@ class MapApp(QMainWindow):
         if isinstance(data, dict) and data.get('cmd') == 'connect':
             if self.bottom_widget:
                 self.bottom_widget.print_connect_cmd(data)
+            if self.ir_camera_set_widget and isIR:
+                self.ir_camera_set_widget.set_radio_image_sensor(data)
             return
     
     # --------------------------
     # 사이트 선택 창 오류 처리
     # --------------------------
     def on_device_dialog_accepted(self):
+        global isIR
         """OK 후 유효한 시리얼이 설정되었는지 확인하고 SSE 재시작"""
         self.device_selection_resolved = True
 
         if getattr(protocol_module, "DEVICE_NAME", ""):
             # 새 DEVICE_NAME으로 SSE 재접속
             self.setup_sse_event()
+
             # 클릭 토글 상태는 초기 표시를 '무시'하도록 False로 유지
             self.bottom_toggle_state = False
+
+            camera_serial=self.protocol.get_camera_serial_number()
+            print(camera_serial)
+            if "IR" in camera_serial:
+                isIR=True
+            else:
+                isIR=False
         else:
             self.show_no_device_connected_message()
+        
 
     def on_device_dialog_rejected(self):
         """취소 클릭 시 알림 표시"""
@@ -502,10 +545,10 @@ class MapApp(QMainWindow):
 
         if self.camera_md_data_widget and self.camera_md_data_widget.isVisible():
             try:
-                self.camera_md_data_widget.update_data(data)
+                self.camera_md_data_widget.update_data(data,isIR)
             except Exception as e:
                 print(f"⚠️ 다이얼로그 데이터 업데이트 오류: {e}")
-
+    
 # ------------------------------
 # 실행부
 # ------------------------------

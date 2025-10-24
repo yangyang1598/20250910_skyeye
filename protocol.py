@@ -12,6 +12,7 @@ DEVICE_NAME = "MD-2020-00-L"
 SERVER_URL="http://skysys.iptime.org:8000"
 MISSION_DEVICE_LIST_URL = f"{SERVER_URL}/site/"
 MISSION_DEVICE_LOG_URL = f"{SERVER_URL}/mission_device_log/?name="
+CAMERA_SERIAL_URL = f"{SERVER_URL}/mission_device/?name="
 EVENT_URL = f"{SERVER_URL}/messages/"
 SSE_EVENTS_URL_PREFIX = f"{SERVER_URL}/events/"
 SSE_EVENTS_URL = f"{SSE_EVENTS_URL_PREFIX}{DEVICE_NAME}-GCS"
@@ -62,10 +63,35 @@ class Protocol:
                 data=response.json()
                 return data
             else:
-                print(f"⚠️ API 오류: {response.status_code}")
+                print(f"⚠️ 임무장비 데이터 API 오류: {response.status_code}")
                 return None
         except Exception as e:
-            print(f"❌ API 요청 오류: {e}")
+            print(f"❌ 임무장비 데이터 API 요청 오류: {e}")
+        return None
+    def get_camera_serial_number(self):
+        """서버에서 카메라 시리얼 번호 요청"""
+        try:
+            # 선택 취소/잘못된 선택 시 요청하지 않음
+            if not DEVICE_NAME:
+                return None
+
+            url = CAMERA_SERIAL_URL + DEVICE_NAME
+            headers = {
+                'Content-Type': 'application/json',
+                'charset': 'UTF-8',
+                'Accept': '*/*',
+                'Authorization': TOKEN,
+            }
+            response = requests.get(url, headers=headers)
+
+            if response.status_code == 200:
+                data=response.json()
+                return data.get('camera_serial_number')
+            else:
+                print(f"⚠️ 카메라 시리얼 번호 API 오류: {response.status_code}")
+                return None
+        except Exception as e:
+            print(f"❌카메라 시리얼 번호 API 요청 오류: {e}")
         return None
     def post_event_message(self, msg):
         """서버에 이벤트 메시지 전송"""

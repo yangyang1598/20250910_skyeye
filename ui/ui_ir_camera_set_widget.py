@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'ir_camera_set_widgetgHhula.ui'
+## Form generated from reading UI file 'ir_camera_set_widgetGOemga.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.8.1
+## Created by: Qt User Interface Compiler version 6.9.2
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -27,6 +27,13 @@ class Ui_Form(object):
         self.gridLayout_4.setObjectName(u"gridLayout_4")
         self.gridLayout_3 = QGridLayout()
         self.gridLayout_3.setObjectName(u"gridLayout_3")
+        self.line_3 = QFrame(Form)
+        self.line_3.setObjectName(u"line_3")
+        self.line_3.setFrameShape(QFrame.Shape.HLine)
+        self.line_3.setFrameShadow(QFrame.Shadow.Sunken)
+
+        self.gridLayout_3.addWidget(self.line_3, 2, 0, 1, 1)
+
         self.gridLayout = QGridLayout()
         self.gridLayout.setObjectName(u"gridLayout")
         self.radio_black_hot = QRadioButton(Form)
@@ -66,6 +73,7 @@ class Ui_Form(object):
 
         self.label_title_ir_color_palette = QLabel(Form)
         self.label_title_ir_color_palette.setObjectName(u"label_title_ir_color_palette")
+        self.label_title_ir_color_palette.setMaximumSize(QSize(200, 20))
         font = QFont()
         font.setPointSize(15)
         font.setBold(True)
@@ -85,49 +93,48 @@ class Ui_Form(object):
         self.gridLayout.addWidget(self.radio_arctic, 5, 0, 1, 1)
 
 
-        self.gridLayout_3.addLayout(self.gridLayout, 2, 0, 1, 1)
+        self.gridLayout_3.addLayout(self.gridLayout, 3, 0, 1, 1)
 
         self.gridLayout_2 = QGridLayout()
         self.gridLayout_2.setObjectName(u"gridLayout_2")
-        self.radio_eo = QRadioButton(Form)
-        self.radio_eo.setObjectName(u"radio_eo")
-
-        self.gridLayout_2.addWidget(self.radio_eo, 1, 0, 1, 1)
-
-        self.label_title_ir_sensor = QLabel(Form)
-        self.label_title_ir_sensor.setObjectName(u"label_title_ir_sensor")
-        self.label_title_ir_sensor.setFont(font)
-
-        self.gridLayout_2.addWidget(self.label_title_ir_sensor, 0, 0, 1, 1)
-
         self.radio_EO_IR = QRadioButton(Form)
         self.radio_EO_IR.setObjectName(u"radio_EO_IR")
 
         self.gridLayout_2.addWidget(self.radio_EO_IR, 2, 0, 1, 1)
 
-        self.radioButton_4 = QRadioButton(Form)
-        self.radioButton_4.setObjectName(u"radioButton_4")
+        self.radio_IR_EO = QRadioButton(Form)
+        self.radio_IR_EO.setObjectName(u"radio_IR_EO")
 
-        self.gridLayout_2.addWidget(self.radioButton_4, 2, 1, 1, 1)
+        self.gridLayout_2.addWidget(self.radio_IR_EO, 2, 1, 1, 1)
+
+        self.label_title_ir_sensor = QLabel(Form)
+        self.label_title_ir_sensor.setObjectName(u"label_title_ir_sensor")
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.label_title_ir_sensor.sizePolicy().hasHeightForWidth())
+        self.label_title_ir_sensor.setSizePolicy(sizePolicy)
+        self.label_title_ir_sensor.setMaximumSize(QSize(200, 20))
+        self.label_title_ir_sensor.setFont(font)
+
+        self.gridLayout_2.addWidget(self.label_title_ir_sensor, 0, 0, 1, 1)
+
+        self.radio_eo = QRadioButton(Form)
+        self.radio_eo.setObjectName(u"radio_eo")
+
+        self.gridLayout_2.addWidget(self.radio_eo, 1, 0, 1, 1)
 
         self.radio_ir = QRadioButton(Form)
         self.radio_ir.setObjectName(u"radio_ir")
 
         self.gridLayout_2.addWidget(self.radio_ir, 1, 1, 1, 1)
 
-        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.verticalSpacer = QSpacerItem(20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Maximum)
 
         self.gridLayout_2.addItem(self.verticalSpacer, 3, 0, 1, 1)
 
 
         self.gridLayout_3.addLayout(self.gridLayout_2, 0, 0, 1, 1)
-
-        self.line_3 = QFrame(Form)
-        self.line_3.setObjectName(u"line_3")
-        self.line_3.setFrameShape(QFrame.Shape.HLine)
-        self.line_3.setFrameShadow(QFrame.Shadow.Sunken)
-
-        self.gridLayout_3.addWidget(self.line_3, 1, 0, 1, 1)
 
 
         self.gridLayout_4.addLayout(self.gridLayout_3, 0, 0, 1, 1)
@@ -150,10 +157,10 @@ class Ui_Form(object):
         self.label_title_ir_color_palette.setText(QCoreApplication.translate("Form", u"IR Color Palette", None))
         self.radio_red_hot.setText(QCoreApplication.translate("Form", u"Red Hot", None))
         self.radio_arctic.setText(QCoreApplication.translate("Form", u"Arctic", None))
-        self.radio_eo.setText(QCoreApplication.translate("Form", u"EO", None))
-        self.label_title_ir_sensor.setText(QCoreApplication.translate("Form", u"IR Image Sensor", None))
         self.radio_EO_IR.setText(QCoreApplication.translate("Form", u"EO+IR", None))
-        self.radioButton_4.setText(QCoreApplication.translate("Form", u"IR+EO", None))
+        self.radio_IR_EO.setText(QCoreApplication.translate("Form", u"IR+EO", None))
+        self.label_title_ir_sensor.setText(QCoreApplication.translate("Form", u"IR Image Sensor", None))
+        self.radio_eo.setText(QCoreApplication.translate("Form", u"EO", None))
         self.radio_ir.setText(QCoreApplication.translate("Form", u"IR", None))
     # retranslateUi
 

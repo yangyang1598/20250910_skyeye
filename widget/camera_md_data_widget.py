@@ -10,7 +10,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from ui.ui_camera_md_data_widget import Ui_Form
 
-isIR=False #TODO: 현재 하드코딩, 추후 서버 내 값 불러와서 설정
+
 TITLE_NAME=NONE
 
 class CameraMdDataWidget(QWidget,Ui_Form):
@@ -21,7 +21,7 @@ class CameraMdDataWidget(QWidget,Ui_Form):
         self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         
     
-    def update_data(self, data):
+    def update_data(self, data,isIR=False):
         """데이터 업데이트 함수"""
         try:
             # Mission Device (MD) 데이터 업데이트
