@@ -374,8 +374,8 @@ class MapApp(QMainWindow):
         data_date=data.get('date')
         data_date = datetime.fromisoformat(data_date)
         now = datetime.now(timezone(timedelta(hours=9)))
-        five_minutes_ago = now - timedelta(minutes=5)
-        if data_date >= five_minutes_ago:
+        three_minutes_ago = now - timedelta(minutes=3) #3분 이내 데이터 여부 파악용 
+        if data_date >= three_minutes_ago:
             if self.camera_md_data_widget and self.camera_md_data_widget.isVisible():
                 try:
                     self.camera_md_data_widget.update_data(data,isIR)
@@ -393,7 +393,7 @@ class MapApp(QMainWindow):
         else:
                 if self.camera_md_data_widget:
                     try:
-                        self.camera_md_data_widget.set_no_data()
+                        self.camera_md_data_widget.set_no_data() #3분 이내 데이터 없는 경우 -로 표기
                     except Exception as e:
                         print(f"⚠️ 카메라 데이터 '-' 표시 오류: {e}")
 

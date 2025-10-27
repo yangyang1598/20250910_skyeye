@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'ir_camera_set_widgetGOemga.ui'
+## Form generated from reading UI file 'ir_camera_set_widgetfYxSSp.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -36,30 +36,30 @@ class Ui_Form(object):
 
         self.gridLayout = QGridLayout()
         self.gridLayout.setObjectName(u"gridLayout")
-        self.radio_black_hot = QRadioButton(Form)
-        self.radio_black_hot.setObjectName(u"radio_black_hot")
+        self.radio_blackHot = QRadioButton(Form)
+        self.radio_blackHot.setObjectName(u"radio_blackHot")
 
-        self.gridLayout.addWidget(self.radio_black_hot, 1, 1, 1, 1)
+        self.gridLayout.addWidget(self.radio_blackHot, 1, 1, 1, 1)
 
         self.radio_rainbow = QRadioButton(Form)
         self.radio_rainbow.setObjectName(u"radio_rainbow")
 
         self.gridLayout.addWidget(self.radio_rainbow, 3, 1, 1, 1)
 
-        self.radio_hot_iron = QRadioButton(Form)
-        self.radio_hot_iron.setObjectName(u"radio_hot_iron")
+        self.radio_hotIron = QRadioButton(Form)
+        self.radio_hotIron.setObjectName(u"radio_hotIron")
 
-        self.gridLayout.addWidget(self.radio_hot_iron, 4, 1, 1, 1)
+        self.gridLayout.addWidget(self.radio_hotIron, 4, 1, 1, 1)
 
-        self.radio_rainbow_hc = QRadioButton(Form)
-        self.radio_rainbow_hc.setObjectName(u"radio_rainbow_hc")
+        self.radio_rainbowHc = QRadioButton(Form)
+        self.radio_rainbowHc.setObjectName(u"radio_rainbowHc")
 
-        self.gridLayout.addWidget(self.radio_rainbow_hc, 3, 0, 1, 1)
+        self.gridLayout.addWidget(self.radio_rainbowHc, 3, 0, 1, 1)
 
-        self.radio_white_hot = QRadioButton(Form)
-        self.radio_white_hot.setObjectName(u"radio_white_hot")
+        self.radio_whiteHot = QRadioButton(Form)
+        self.radio_whiteHot.setObjectName(u"radio_whiteHot")
 
-        self.gridLayout.addWidget(self.radio_white_hot, 1, 0, 1, 1)
+        self.gridLayout.addWidget(self.radio_whiteHot, 1, 0, 1, 1)
 
         self.radio_ironbow = QRadioButton(Form)
         self.radio_ironbow.setObjectName(u"radio_ironbow")
@@ -82,10 +82,10 @@ class Ui_Form(object):
 
         self.gridLayout.addWidget(self.label_title_ir_color_palette, 0, 0, 1, 1)
 
-        self.radio_red_hot = QRadioButton(Form)
-        self.radio_red_hot.setObjectName(u"radio_red_hot")
+        self.radio_redHot = QRadioButton(Form)
+        self.radio_redHot.setObjectName(u"radio_redHot")
 
-        self.gridLayout.addWidget(self.radio_red_hot, 2, 0, 1, 1)
+        self.gridLayout.addWidget(self.radio_redHot, 2, 0, 1, 1)
 
         self.radio_arctic = QRadioButton(Form)
         self.radio_arctic.setObjectName(u"radio_arctic")
@@ -97,15 +97,15 @@ class Ui_Form(object):
 
         self.gridLayout_2 = QGridLayout()
         self.gridLayout_2.setObjectName(u"gridLayout_2")
-        self.radio_EO_IR = QRadioButton(Form)
-        self.radio_EO_IR.setObjectName(u"radio_EO_IR")
+        self.radio_eo_ir_pip = QRadioButton(Form)
+        self.radio_eo_ir_pip.setObjectName(u"radio_eo_ir_pip")
 
-        self.gridLayout_2.addWidget(self.radio_EO_IR, 2, 0, 1, 1)
+        self.gridLayout_2.addWidget(self.radio_eo_ir_pip, 2, 0, 1, 1)
 
-        self.radio_IR_EO = QRadioButton(Form)
-        self.radio_IR_EO.setObjectName(u"radio_IR_EO")
+        self.radio_ir_eo_pip = QRadioButton(Form)
+        self.radio_ir_eo_pip.setObjectName(u"radio_ir_eo_pip")
 
-        self.gridLayout_2.addWidget(self.radio_IR_EO, 2, 1, 1, 1)
+        self.gridLayout_2.addWidget(self.radio_ir_eo_pip, 2, 1, 1, 1)
 
         self.label_title_ir_sensor = QLabel(Form)
         self.label_title_ir_sensor.setObjectName(u"label_title_ir_sensor")
@@ -147,18 +147,18 @@ class Ui_Form(object):
 
     def retranslateUi(self, Form):
         Form.setWindowTitle(QCoreApplication.translate("Form", u"IR \uc7a5\ube44 \uc124\uc815", None))
-        self.radio_black_hot.setText(QCoreApplication.translate("Form", u"Black Hot", None))
+        self.radio_blackHot.setText(QCoreApplication.translate("Form", u"Black Hot", None))
         self.radio_rainbow.setText(QCoreApplication.translate("Form", u"Rainbow", None))
-        self.radio_hot_iron.setText(QCoreApplication.translate("Form", u"Hot Iron", None))
-        self.radio_rainbow_hc.setText(QCoreApplication.translate("Form", u"Rainbow HC", None))
-        self.radio_white_hot.setText(QCoreApplication.translate("Form", u"White Hot", None))
+        self.radio_hotIron.setText(QCoreApplication.translate("Form", u"Hot Iron", None))
+        self.radio_rainbowHc.setText(QCoreApplication.translate("Form", u"Rainbow HC", None))
+        self.radio_whiteHot.setText(QCoreApplication.translate("Form", u"White Hot", None))
         self.radio_ironbow.setText(QCoreApplication.translate("Form", u"Ironbow", None))
         self.radio_lava.setText(QCoreApplication.translate("Form", u"Lava", None))
         self.label_title_ir_color_palette.setText(QCoreApplication.translate("Form", u"IR Color Palette", None))
-        self.radio_red_hot.setText(QCoreApplication.translate("Form", u"Red Hot", None))
+        self.radio_redHot.setText(QCoreApplication.translate("Form", u"Red Hot", None))
         self.radio_arctic.setText(QCoreApplication.translate("Form", u"Arctic", None))
-        self.radio_EO_IR.setText(QCoreApplication.translate("Form", u"EO+IR", None))
-        self.radio_IR_EO.setText(QCoreApplication.translate("Form", u"IR+EO", None))
+        self.radio_eo_ir_pip.setText(QCoreApplication.translate("Form", u"EO+IR", None))
+        self.radio_ir_eo_pip.setText(QCoreApplication.translate("Form", u"IR+EO", None))
         self.label_title_ir_sensor.setText(QCoreApplication.translate("Form", u"IR Image Sensor", None))
         self.radio_eo.setText(QCoreApplication.translate("Form", u"EO", None))
         self.radio_ir.setText(QCoreApplication.translate("Form", u"IR", None))

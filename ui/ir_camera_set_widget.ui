@@ -26,7 +26,7 @@
      <item row="3" column="0">
       <layout class="QGridLayout" name="gridLayout">
        <item row="1" column="1">
-        <widget class="QRadioButton" name="radio_black_hot">
+        <widget class="QRadioButton" name="radio_blackHot">
          <property name="text">
           <string>Black Hot</string>
          </property>
@@ -40,21 +40,21 @@
         </widget>
        </item>
        <item row="4" column="1">
-        <widget class="QRadioButton" name="radio_hot_iron">
+        <widget class="QRadioButton" name="radio_hotIron">
          <property name="text">
           <string>Hot Iron</string>
          </property>
         </widget>
        </item>
        <item row="3" column="0">
-        <widget class="QRadioButton" name="radio_rainbow_hc">
+        <widget class="QRadioButton" name="radio_rainbowHc">
          <property name="text">
           <string>Rainbow HC</string>
          </property>
         </widget>
        </item>
        <item row="1" column="0">
-        <widget class="QRadioButton" name="radio_white_hot">
+        <widget class="QRadioButton" name="radio_whiteHot">
          <property name="text">
           <string>White Hot</string>
          </property>
@@ -95,7 +95,7 @@
         </widget>
        </item>
        <item row="2" column="0">
-        <widget class="QRadioButton" name="radio_red_hot">
+        <widget class="QRadioButton" name="radio_redHot">
          <property name="text">
           <string>Red Hot</string>
          </property>
@@ -113,14 +113,14 @@
      <item row="0" column="0">
       <layout class="QGridLayout" name="gridLayout_2">
        <item row="2" column="0">
-        <widget class="QRadioButton" name="radio_EO_IR">
+        <widget class="QRadioButton" name="radio_eo_ir_pip">
          <property name="text">
           <string>EO+IR</string>
          </property>
         </widget>
        </item>
        <item row="2" column="1">
-        <widget class="QRadioButton" name="radio_IR_EO">
+        <widget class="QRadioButton" name="radio_ir_eo_pip">
          <property name="text">
           <string>IR+EO</string>
          </property>
