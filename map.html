@@ -74,10 +74,10 @@
   <!-- 메뉴들 -->
   <div id="ctxMenu">
     <button id="addMarkerBtn">마커 추가</button>
-    <button id="addPolygonBtn">폴리곤 추가</button>
+    <!-- <button id="addPolygonBtn">폴리곤 추가</button> -->
   </div>
   <div id="markerMenu"><button id="mkDeleteBtn">이 마커 삭제</button></div>
-  <div id="polyMenu"><button id="polyDeleteBtn">이 폴리곤 삭제</button></div>
+  <!-- <div id="polyMenu"><button id="polyDeleteBtn">이 폴리곤 삭제</button></div> -->
 
   <script>
   /**************************************************************************
@@ -374,19 +374,18 @@
    ***************************************************************************/
   const drawnItems = new L.FeatureGroup().addTo(map);
   const drawOptions = {
-    draw: { polygon: true, marker: true, polyline: false, rectangle: false, circle: false, circlemarker: false },
+    draw: { polygon: false, marker: true, polyline: false, rectangle: false, circle: false, circlemarker: false },
     edit: { featureGroup: drawnItems }
   };
   const drawControl = new L.Control.Draw(drawOptions); map.addControl(drawControl);
 
-  const markers = {}, polygons = {};
-  let lastCtxLatLng = null, currentMarkerId = null, currentPolygonId = null, currentPolygonLayer = null;
+  const markers = {}; // polygons disabled
+  let lastCtxLatLng = null, currentMarkerId = null; // currentPolygonId and currentPolygonLayer disabled
 
   const ctxMenu = document.getElementById('ctxMenu'),
-        markerMenu = document.getElementById('markerMenu'),
-        polyMenu = document.getElementById('polyMenu');
+        markerMenu = document.getElementById('markerMenu'); // const polyMenu = document.getElementById('polyMenu');
 
-  function hideMenus(){ ctxMenu.style.display="none"; markerMenu.style.display="none"; polyMenu.style.display="none"; }
+  function hideMenus(){ ctxMenu.style.display="none"; markerMenu.style.display="none"; /* polyMenu.style.display="none"; */ }
 
   map.on('contextmenu', e => {
     hideMenus();
@@ -412,7 +411,8 @@
     markers[id] = m;
   };
 
-  document.getElementById('addPolygonBtn').onclick = () => { hideMenus(); new L.Draw.Polygon(map).enable(); };
+  // const addPolygonBtn = document.getElementById('addPolygonBtn');
+  // if (addPolygonBtn) addPolygonBtn.onclick = () => { hideMenus(); new L.Draw.Polygon(map).enable(); };
 
   document.getElementById('mkDeleteBtn').onclick = () => {
     if (currentMarkerId && markers[currentMarkerId]) {
@@ -423,6 +423,7 @@
     hideMenus();
   };
 
+  /*
   document.getElementById('polyDeleteBtn').onclick = () => {
     if (currentPolygonId && currentPolygonLayer) {
       drawnItems.removeLayer(currentPolygonLayer);
@@ -431,22 +432,23 @@
     }
     hideMenus();
   };
+  */
 
   map.on(L.Draw.Event.CREATED, e => {
     const layer = e.layer;
     drawnItems.addLayer(layer);
-    if (e.layerType === 'polygon') {
-      const id = `p_${Date.now()}`;
-      polygons[id] = layer;
-      layer.on('click', ev => {
-        hideMenus();
-        polyMenu.style.left = ev.containerPoint.x + "px";
-        polyMenu.style.top = ev.containerPoint.y + "px";
-        polyMenu.style.display = "block";
-        currentPolygonId = id;
-        currentPolygonLayer = layer;
-      });
-    }
+    /* if (e.layerType === 'polygon') {
+       const id = `p_${Date.now()}`;
+       polygons[id] = layer;
+       layer.on('click', ev => {
+         hideMenus();
+         polyMenu.style.left = e.containerPoint.x + "px";
+         polyMenu.style.top = e.containerPoint.y + "px";
+         polyMenu.style.display = "block";
+         currentPolygonId = id;
+         currentPolygonLayer = layer;
+       });
+     } */
   });
 
   // 마우스 위치를 Python (Qt) 에 전달
