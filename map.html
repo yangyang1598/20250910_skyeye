@@ -74,6 +74,8 @@
   <!-- 메뉴들 -->
   <div id="ctxMenu">
     <button id="addMarkerBtn">마커 추가</button>
+    <button id="editMarkerBtn">마커 편집</button>
+    <button id="deleteAllMarkerBtn">모든 마커 삭제</button>
     <!-- <button id="addPolygonBtn">폴리곤 추가</button> -->
   </div>
   <div id="markerMenu"><button id="mkDeleteBtn">이 마커 삭제</button></div>
@@ -385,6 +387,48 @@
   const markers = {}; // polygons disabled
   let lastCtxLatLng = null, currentMarkerId = null; // currentPolygonId and currentPolygonLayer disabled
 
+  // POI 마커 저장소
+  const poiMarkers = {}; // id(string) -> L.Marker
+  const poiData = {};    // id(string) -> { poi_id, lat, lng, altitude, zoom_level }
+
+  // Python에서 전달받은 POI 리스트를 지도에 표시
+  function renderPoiMarkers(list) {
+    try {
+      if (!Array.isArray(list)) return;
+      list.forEach(p => {
+        const id = String(p.poi_id);
+        if (id === 'null' || id === 'undefined') return;
+        if (poiMarkers[id]) return; // 중복 추가 방지
+        const lat = parseFloat(p.lat);
+        const lng = parseFloat(p.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+        const m = L.marker([lat, lng]).addTo(map);
+        m.on('click', ev => {
+          hideMenus();
+          markerMenu.style.left = ev.containerPoint.x + "px";
+          markerMenu.style.top = ev.containerPoint.y + "px";
+          markerMenu.style.display = "block";
+          currentMarkerId = `poi_${id}`;
+        });
+        poiMarkers[id] = m;
+        poiData[id] = { poi_id: p.poi_id, lat: lat, lng: lng, altitude: p.altitude, zoom_level: p.zoom_level };
+      });
+      console.log('POI 마커 렌더링 완료:', Object.keys(poiMarkers).length);
+    } catch (e) {
+      console.warn('renderPoiMarkers error:', e);
+    }
+  }
+
+  // 가장 가까운 POI id 찾기 (임계값 이내)
+  function nearestPoiId(latlng, maxDistMeters = 80) {
+    let bestId = null, bestDist = Infinity;
+    Object.keys(poiMarkers).forEach(id => {
+      const dist = map.distance(latlng, poiMarkers[id].getLatLng());
+      if (dist < bestDist) { bestDist = dist; bestId = id; }
+    });
+    return (bestDist <= maxDistMeters) ? bestId : null;
+  }
+
   const ctxMenu = document.getElementById('ctxMenu'),
         markerMenu = document.getElementById('markerMenu'); // const polyMenu = document.getElementById('polyMenu');
 
@@ -442,6 +486,68 @@
       currentMarkerId = null;
     }
     hideMenus();
+  };
+
+  // 모든 마커 삭제
+  const deleteAllBtn = document.getElementById('deleteAllMarkerBtn');
+  if (deleteAllBtn) deleteAllBtn.onclick = () => {
+    hideMenus();
+    try {
+      // 사용자 추가 마커 제거
+      Object.keys(markers).forEach(id => {
+        try { map.removeLayer(markers[id]); } catch(e){}
+        delete markers[id];
+      });
+      // POI 마커 제거 (DB에서 불러온 표시용)
+      Object.keys(poiMarkers || {}).forEach(id => {
+        try { map.removeLayer(poiMarkers[id]); } catch(e){}
+        delete poiMarkers[id];
+        if (poiData) delete poiData[id];
+      });
+      currentMarkerId = null;
+      window.pyHandler.deleteAllMarkers();
+      console.log('모든 마커 삭제 완료');
+    } catch (err) {
+      console.warn('모든 마커 삭제 중 오류:', err);
+    }
+  };
+
+  // 컨텍스트 메뉴: 마커 편집 (POI 대상)
+  document.getElementById('editMarkerBtn').onclick = () => {
+    hideMenus();
+
+    // 우선 현재 선택된 마커가 POI인지 확인
+    let targetId = null;
+    if (currentMarkerId && currentMarkerId.startsWith('poi_')) {
+      targetId = currentMarkerId.slice(4);
+    } else if (lastCtxLatLng) {
+      targetId = nearestPoiId(lastCtxLatLng, 80);
+    }
+
+    if (!targetId || !poiData[targetId]) {
+      console.warn('편집할 POI 마커를 찾을 수 없습니다. 마커를 클릭 후 시도하세요.');
+      return;
+    }
+
+    const p = poiData[targetId];
+    // Qt 환경: Python에 편집 입력 요청 (기본값 altitude/zoom_level)
+    if (window.pyHandler && typeof window.pyHandler.requestEditMarkerInputs === 'function') {
+      try { window.pyHandler.requestEditMarkerInputs(parseInt(targetId, 10)); } catch (err) { console.warn('requestEditMarkerInputs error:', err); }
+      return;
+    }
+
+    // 브라우저 프리뷰 환경: 기본값으로 프롬프트 제공
+    const degDefault = (p.altitude !== undefined && p.altitude !== null) ? String(p.altitude) : '';
+    const zoomDefault = (p.zoom_level !== undefined && p.zoom_level !== null) ? String(p.zoom_level) : '';
+    const deg = window.prompt('대상 각도 입력 (-180 ~ 180)', degDefault);
+    if (deg === null) return;
+    const zd = window.prompt('줌 레벨 입력 (0~10 정수)', zoomDefault);
+    if (zd === null) return;
+    const degreeVal = parseFloat(deg);
+    const zoomVal = parseInt(zd, 10);
+    if (!Number.isFinite(degreeVal) || degreeVal < -180 || degreeVal > 180) { console.warn('각도 입력 무효'); return; }
+    if (!Number.isInteger(zoomVal) || zoomVal < 0 || zoomVal > 10) { console.warn('줌 입력 무효'); return; }
+    console.log(`POI 편집(프리뷰): poi_id=${targetId}, degree=${degreeVal}, zoom=${zoomVal}, lat=${p.lat}, lng=${p.lng}`);
   };
 
   /*

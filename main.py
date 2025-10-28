@@ -78,6 +78,43 @@ class WebChannelHandler(QObject):
         except Exception as e:
             print(f"❌ 입력 다이얼로그 처리 오류: {e}")
 
+    @Slot(int)
+    def requestEditMarkerInputs(self, poi_id: int):
+        """JavaScript → Python: POI 마커 편집(각도/줌) 입력 요청
+        - 기본값은 DB의 altitude(각도), zoom_level(줌) 사용
+        - 대상 좌표는 해당 POI의 latitude/longitude
+        """
+        try:
+            target = None
+            poi_list = getattr(self.main_window, 'db_poi_list', []) or []
+            for p in poi_list:
+                if getattr(p, 'poi_id', None) == poi_id:
+                    target = p
+                    break
+
+            if not target:
+                print(f"POI 편집 대상 없음: poi_id={poi_id}")
+                return
+
+            # 편집 기본값으로 설정
+            self.main_window.point_degree = target.altitude
+            self.main_window.point_zoom = target.zoom_level
+
+            degree = self.main_window.show_tagert_angle_message()
+            if degree is None:
+                print("사용자 각도 입력 취소")
+                return
+            zoom = self.main_window.show_tagert_zoom_message()
+            if zoom is None:
+                print("사용자 줌 입력 취소")
+                return
+
+            # 저장: 각도/줌 + 좌표를 MapApp에 반영
+            self.main_window.set_marker_inputs(degree, zoom, target.latitude, target.longitude)
+            print(f"POI 편집 완료: poi_id={poi_id}, lat={target.latitude}, lng={target.longitude}, degree={degree}, zoom={zoom}")
+        except Exception as e:
+            print(f"❌ POI 편집 처리 오류: {e}")
+
     @Slot(float, float)
     def updateCursorLatLng(self, lat, lng):
         """JavaScript → Python: 마우스 커서 위젯 위치 업데이트"""
@@ -91,6 +128,15 @@ class WebChannelHandler(QObject):
         self.main_window.fire_sensor_widget.set_fire_sensor(index=idx)
         self.main_window.show_fire_sensor_widget(idx)
 
+    @Slot()
+    def deleteAllMarkers(self):
+        """JavaScript → Python: 모든 마커 삭제"""
+        try:
+            self.main_window.delete_all_markers()
+            print("모든 마커 삭제 완료")
+        except Exception as e:
+            print(f"❌ 모든 마커 삭제 오류: {e}")
+            
 # ------------------------------
 # 메인 윈도우 클래스
 # ------------------------------
@@ -525,6 +571,9 @@ class MapApp(QMainWindow):
         else:
             print("❌ HTML 로딩 실패")
 
+    # --------------------------
+    # 등록지점 마커
+    # --------------------------
     def set_marker_inputs(self, degree: float, zoom: int, lat: float = None, lng: float = None):
         """map.html에서 전달된 마커 각도/줌 값 및 선택 위치 저장"""
         try:
@@ -533,10 +582,15 @@ class MapApp(QMainWindow):
             if lat is not None and lng is not None:
                 self.point_lat = lat
                 self.point_lng = lng
-                # print(f"저장 완료 degree={self.point_degree}, zoom={self.point_zoom}, lat={self.point_lat}, lng={self.point_lng}")
+                
         except Exception as e:
             print(f"❌ 마커 입력 저장 오류: {e}")
 
+    def delete_all_markers(self):
+        "모든 marker 제거"
+        self.db_poi.site_id=protocol_module.SITE_ID
+        self.db_poi.delete()
+            
     # --------------------------
     # 입력 다이얼로그
     # --------------------------
@@ -611,7 +665,21 @@ class MapApp(QMainWindow):
                 # site_id에 매핑된 poi 마커 가져오기기
                 self.db_poi.site_id=protocol_module.SITE_ID
                 self.db_poi_list=self.db_poi.select()
-                print(self.db_poi_list)
+                # 지도에 POI 마커 렌더링 요청
+                try:
+                    pois = []
+                    for p in (self.db_poi_list or []):
+                        pois.append({
+                            'poi_id': getattr(p, 'poi_id', None),
+                            'lat': getattr(p, 'latitude', None),
+                            'lng': getattr(p, 'longitude', None),
+                            'altitude': getattr(p, 'altitude', None),
+                            'zoom_level': getattr(p, 'zoom_level', None)
+                        })
+                    js = f"if (typeof renderPoiMarkers === 'function') {{ renderPoiMarkers({json.dumps(pois)}); }}"
+                    self.web_view.page().runJavaScript(js)
+                except Exception as e:
+                    print(f"❌ POI 렌더링 전달 오류: {e}")
         else:
             self.show_no_device_connected_message()
         

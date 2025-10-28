@@ -42,3 +42,18 @@ class Poi:
         except Exception as e:
             print(f"select error: {e}")
             return None
+
+    def delete(self):
+        db = DATABASE()
+        params = []
+        
+        try:
+            print(f"site_id: {self.site_id}")
+            sql = f"""DELETE FROM {self.TABLE_NAME} WHERE site_id = %s"""
+            params.append(self.site_id)
+
+            rows = db.execute(sql, params)
+            return rows
+        except Exception as e:
+            print(f"delete error: {e}")
+            return None
