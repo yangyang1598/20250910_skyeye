@@ -117,8 +117,11 @@
 
   const FireSensorMarkers = [];         // L.Marker
   const FireSensorRangeCircles = [];    // L.Circle
-  let FireSensorStatuses = [];          // 최근 상태 배열 (index 기준 주의)
-  let lastDroneData = null;
+   let FireSensorStatuses = [];          // 최근 상태 배열 (index 기준 주의)
+   let lastDroneData = null;
+   // 사용자 입력 저장 변수
+   let point_degree = null;
+   let point_zoom = null;
 
   /**************************************************************************
    * 유틸리티
@@ -387,6 +390,20 @@
 
   function hideMenus(){ ctxMenu.style.display="none"; markerMenu.style.display="none"; /* polyMenu.style.display="none"; */ }
 
+  // 지정 좌표에 마커 추가 (Python에서도 호출할 수 있도록 전역 함수)
+  function addMarkerAt(lat, lng) {
+    const id = `m_${Date.now()}`;
+    const m = L.marker([lat, lng]).addTo(map);
+    m.on('click', ev => {
+      hideMenus();
+      markerMenu.style.left = ev.containerPoint.x + "px";
+      markerMenu.style.top = ev.containerPoint.y + "px";
+      markerMenu.style.display = "block";
+      currentMarkerId = id;
+    });
+    markers[id] = m;
+  }
+
   map.on('contextmenu', e => {
     hideMenus();
     lastCtxLatLng = e.latlng;
@@ -396,19 +413,23 @@
   });
   ['click','movestart','zoomstart'].forEach(ev => map.on(ev, hideMenus));
 
+    /**************************************************************************
+   * 마커 추가 알림창 설정 및 좌표/줌/각도 입력 값 main.py 전달
+   ***************************************************************************/
   document.getElementById('addMarkerBtn').onclick = () => {
     hideMenus();
-    if (!lastCtxLatLng) return;
-    const id = `m_${Date.now()}`;
-    const m = L.marker(lastCtxLatLng).addTo(map);
-    m.on('click', ev => {
-      hideMenus();
-      markerMenu.style.left = ev.containerPoint.x + "px";
-      markerMenu.style.top = ev.containerPoint.y + "px";
-      markerMenu.style.display = "block";
-      currentMarkerId = id;
-    });
-    markers[id] = m;
+
+    // 우클릭 위치(컨텍스트 메뉴 기준)가 없으면 중단
+    if (!lastCtxLatLng) {
+      console.warn('컨텍스트 위치가 없습니다. 지도에서 우클릭 후 마커를 추가하세요.');
+      return;
+    }
+
+    // Qt 환경: Python에 다이얼로그 요청 (QInputDialog/메시지 박스 스타일)
+    if (window.pyHandler && typeof window.pyHandler.requestMarkerInputs === 'function') {
+      try { window.pyHandler.requestMarkerInputs(lastCtxLatLng.lat, lastCtxLatLng.lng); } catch (err) { console.warn('requestMarkerInputs error:', err); }
+      return; // 입력 및 마커 생성은 Python/Qt에서 처리
+    }
   };
 
   // const addPolygonBtn = document.getElementById('addPolygonBtn');

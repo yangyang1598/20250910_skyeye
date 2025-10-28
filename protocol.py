@@ -8,6 +8,7 @@ from queue import Queue
 # ------------------------------
 TOKEN = "Token 8dd64a2d6c5f87da2078e0e09b4b99db29614537"
 DEVICE_NAME = "MD-2020-00-L"
+SITE_ID=""
 
 SERVER_URL="http://skysys.iptime.org:8000"
 MISSION_DEVICE_LIST_URL = f"{SERVER_URL}/site/"

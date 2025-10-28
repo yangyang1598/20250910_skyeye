@@ -30,11 +30,14 @@ class MissionDeviceListDialog(QDialog, Ui_Dialog):
                 return super().accept()
 
             serial = item.get('missiondevice_serial_number')
+            site_id = item.get('site_id')
+
             if serial:
                 import widget.camera_md_data_widget as camera_md_data_widget_module
                 import protocol as protocol_module
 
                 camera_md_data_widget_module.TITLE_NAME = selected_name
+                protocol_module.SITE_ID = site_id
                 
                 protocol_module.DEVICE_NAME = serial
                 protocol_module.IS_DEVICE_SELECTED = True

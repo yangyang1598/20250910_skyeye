@@ -3,7 +3,7 @@ import os
 import json
 from datetime import datetime,timedelta,timezone
 from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QGridLayout,QSpacerItem,QSizePolicy, QMessageBox
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QGridLayout, QSpacerItem, QSizePolicy, QMessageBox, QInputDialog
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtCore import QUrl, QTimer, QObject, Slot
@@ -20,6 +20,7 @@ from widget.ir_camera_set_widget import IRCameraSetWidget
 from dialog.mission_device_list_dialog import MissionDeviceListDialog
 from protocol import Protocol
 import protocol as protocol_module
+from db.db_poi import Poi
 
 
 isIR=False 
@@ -56,6 +57,28 @@ class WebChannelHandler(QObject):
             traceback.print_exc()
 
     @Slot(float, float)
+    def requestMarkerInputs(self, lat, lng):
+        """JavaScript → Python: Qt 다이얼로그로 각도/줌 입력 요청"""
+        try:
+            degree = self.main_window.show_tagert_angle_message()
+            if degree is None:
+                print("사용자 각도 입력 취소")
+                return
+            zoom = self.main_window.show_tagert_zoom_message()
+            if zoom is None:
+                print("사용자 줌 입력 취소")
+                return
+
+            # 저장 후 JS에 마커 생성 요청
+            self.main_window.set_marker_inputs(degree, zoom, lat, lng)
+            js = f"if (typeof addMarkerAt === 'function') {{ addMarkerAt({lat}, {lng}); }}"
+            self.main_window.web_view.page().runJavaScript(js)
+
+            print(f"마커 생성 요청: lat={lat}, lng={lng}, degree={degree}, zoom={zoom},site_id={protocol_module.SITE_ID}")
+        except Exception as e:
+            print(f"❌ 입력 다이얼로그 처리 오류: {e}")
+
+    @Slot(float, float)
     def updateCursorLatLng(self, lat, lng):
         """JavaScript → Python: 마우스 커서 위젯 위치 업데이트"""
         self.main_window.update_cursor_latlng(lat, lng)
@@ -77,12 +100,20 @@ class MapApp(QMainWindow):
         self.device_data = None
         self.right_container = None
         self.right_layout = None
-        self.fire_sensor_widget = None
         self.no_device_message_shown = False
         self.no_data_message_shown = False
         self.prvious_sensor_index=None # 산불감지 송출 인덱스 저장
         self.previous_gas_index=None # 산불감지 변화 저장
         self.previous_flags_index=None # 산불감지 변화 저장
+
+        # 사용자 입력 저장 변수 (map.html로부터 전달)
+        self.point_degree = None
+        self.point_zoom = None
+        self.point_lat = None
+        self.point_lng = None
+
+        #DB 클래스 정의
+        self.db_poi=Poi()
 
         # bottom_widget 토글 상태 및 연결/안내 제어 플래그
         self.bottom_toggle_state = False
@@ -494,6 +525,55 @@ class MapApp(QMainWindow):
         else:
             print("❌ HTML 로딩 실패")
 
+    def set_marker_inputs(self, degree: float, zoom: int, lat: float = None, lng: float = None):
+        """map.html에서 전달된 마커 각도/줌 값 및 선택 위치 저장"""
+        try:
+            self.point_degree = degree
+            self.point_zoom = zoom
+            if lat is not None and lng is not None:
+                self.point_lat = lat
+                self.point_lng = lng
+                # print(f"저장 완료 degree={self.point_degree}, zoom={self.point_zoom}, lat={self.point_lat}, lng={self.point_lng}")
+        except Exception as e:
+            print(f"❌ 마커 입력 저장 오류: {e}")
+
+    # --------------------------
+    # 입력 다이얼로그
+    # --------------------------
+    def show_tagert_angle_message(self):
+        """각도 입력 다이얼로그 (-180 ~ 180)"""
+        try:
+            default = int(self.point_degree) if self.point_degree is not None else 0
+        except Exception:
+            default = 0
+        val, ok = QInputDialog.getInt(
+            self,
+            "대상 각도 입력",
+            "각도 (-180 ~ 180):",
+            default,
+            -180,
+            180,
+            1
+        )
+        return val if ok else None
+
+    def show_tagert_zoom_message(self):
+        """줌 입력 다이얼로그 (0 ~ 10)"""
+        try:
+            default = int(self.point_zoom) if self.point_zoom is not None else 0
+        except Exception:
+            default = 0
+        val, ok = QInputDialog.getInt(
+            self,
+            "대상 확대/축소 수준",
+            "줌 (0 ~ 10):",
+            default,
+            0,
+            10,
+            1
+        )
+        return val if ok else None
+
     def handle_sse_event(self, data):
         """SSE 이벤트 수신 처리: connect 포함 시 BottomWidget에서 출력"""
         data=json.loads(data) #다시 dict 형식으로 변환
@@ -522,11 +602,16 @@ class MapApp(QMainWindow):
             self.bottom_toggle_state = False
 
             camera_serial=self.protocol.get_camera_serial_number()
-            print(camera_serial)
+            
             if "IR" in camera_serial:
                 isIR=True
             else:
                 isIR=False
+            if getattr(protocol_module,"SITE_ID",""):
+                # site_id에 매핑된 poi 마커 가져오기기
+                self.db_poi.site_id=protocol_module.SITE_ID
+                self.db_poi_list=self.db_poi.select()
+                print(self.db_poi_list)
         else:
             self.show_no_device_connected_message()
         
