@@ -75,6 +75,7 @@ class WebChannelHandler(QObject):
             self.main_window.web_view.page().runJavaScript(js)
 
             print(f"마커 생성 요청: lat={lat}, lng={lng}, degree={degree}, zoom={zoom},site_id={protocol_module.SITE_ID}")
+            self.main_window.insert_poi_db(lat,lng,degree,zoom,protocol_module.SITE_ID)
         except Exception as e:
             print(f"❌ 입력 다이얼로그 처리 오류: {e}")
 
@@ -112,6 +113,7 @@ class WebChannelHandler(QObject):
             # 저장: 각도/줌 + 좌표를 MapApp에 반영
             self.main_window.set_marker_inputs(degree, zoom, target.latitude, target.longitude)
             print(f"POI 편집 완료: poi_id={poi_id}, lat={target.latitude}, lng={target.longitude}, degree={degree}, zoom={zoom}")
+            self.main_window.update_poi_db(target.latitude,target.longitude,degree,zoom,protocol_module.SITE_ID,poi_id)
         except Exception as e:
             print(f"❌ POI 편집 처리 오류: {e}")
 
@@ -582,7 +584,7 @@ class MapApp(QMainWindow):
             if lat is not None and lng is not None:
                 self.point_lat = lat
                 self.point_lng = lng
-                
+
         except Exception as e:
             print(f"❌ 마커 입력 저장 오류: {e}")
 
@@ -590,7 +592,36 @@ class MapApp(QMainWindow):
         "모든 marker 제거"
         self.db_poi.site_id=protocol_module.SITE_ID
         self.db_poi.delete()
-            
+    
+    def insert_poi_db(self,latitude,longitude,degree,zoom,site_id):
+  
+        # 기본 필드 설정
+        self.db_poi.date=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        self.db_poi.site_id=site_id
+        self.db_poi.latitude=latitude
+        self.db_poi.longitude=longitude
+        self.db_poi.altitude=degree
+        self.db_poi.zoom_level=zoom
+
+        # poi_id 설정정
+        next_id = None
+        self.db_poi.site_id = site_id
+        next_id = self.db_poi.get_next_poi_id()
+        self.db_poi.poi_id = next_id
+
+        self.db_poi.insert()
+        
+    def update_poi_db(self,latitude,longitude,degree,zoom,site_id,poi_id):
+        # 기본 필드 설정
+        self.db_poi.date=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        self.db_poi.poi_id=poi_id
+        self.db_poi.site_id=site_id
+        self.db_poi.latitude=latitude
+        self.db_poi.longitude=longitude
+        self.db_poi.altitude=degree
+        self.db_poi.zoom_level=zoom
+
+        self.db_poi.update()
     # --------------------------
     # 입력 다이얼로그
     # --------------------------
@@ -630,17 +661,36 @@ class MapApp(QMainWindow):
 
     def handle_sse_event(self, data):
         """SSE 이벤트 수신 처리: connect 포함 시 BottomWidget에서 출력"""
-        data=json.loads(data) #다시 dict 형식으로 변환
-        print(f"main App {data},{type(data)},{data.get('cmd')},{isinstance(data, dict)}")
-       
-        if isinstance(data, dict) and data.get('cmd') == 'connect':
-            if self.bottom_widget:
-                self.bottom_widget.print_connect_cmd(data)
-            if self.ir_camera_set_widget and isIR:
-                self.ir_camera_set_widget.set_radio_image_sensor(data)
-            return
-    
-    # --------------------------
+        try:
+            # data가 이미 dict일 수 있으므로 중복 파싱을 피하고,
+            # 문자열인 경우에만 JSON 파싱을 시도합니다.
+            if isinstance(data, str):
+                try:
+                    parsed = json.loads(data)
+                    data = parsed
+                except Exception:
+                    # 유효한 JSON이 아니면 원본 문자열을 그대로 사용
+                    pass
+
+            # 안전하게 로깅 (dict일 때만 .get 사용)
+            cmd_val = data.get('cmd') if isinstance(data, dict) else None
+            # print(f"main App {data},{type(data)},{cmd_val}")
+
+            if isinstance(data, dict):
+                if self.bottom_widget:
+                    self.bottom_widget.receive_connect_signal(data)
+                if self.ir_camera_set_widget and isIR:
+                    self.ir_camera_set_widget.set_radio_image_sensor(data)
+            else:
+                # dict가 아닌 이벤트(문자열/기타)는 현재 처리하지 않음
+                # 필요 시 특정 문자열 이벤트에 대한 분기 추가 가능
+                pass
+        except Exception as e:
+            print(f"❌ SSE 이벤트 처리 오류: {e}")
+            import traceback
+            traceback.print_exc()
+        return
+
     # 사이트 선택 창 오류 처리
     # --------------------------
     def on_device_dialog_accepted(self):
