@@ -306,7 +306,8 @@
 
     // camera heading line (optional)
     if (camera_yaw !== null && camera_yaw !== undefined) {
-      const camHdg = (camera_yaw % 360 + 360) % 360;
+      const camRel = hdg + camera_yaw; // headingLine을 기준으로 camera 라인 설정
+      const camHdg = (camRel % 360 + 360) % 360;
       const camEnd = destinationPoint(lat, lng, camHdg, 800);
       if (!tracked.cameraHeadingLine) {
         tracked.cameraHeadingLine = L.polyline([ll, [camEnd.lat, camEnd.lng]], {
