@@ -78,7 +78,7 @@
     <!-- <button id="addPolygonBtn">폴리곤 추가</button> -->
   </div>
   <div id="markerMenu">
-    <button id="mkDeleteBtn">이 마커 삭제</button>
+    <button id="mkDeleteBtn">마커 삭제</button>
     <button id="editMarkerBtn">마커 편집</button>
   </div>
   <!-- <div id="polyMenu"><button id="polyDeleteBtn">이 폴리곤 삭제</button></div> -->
@@ -483,9 +483,31 @@
   // if (addPolygonBtn) addPolygonBtn.onclick = () => { hideMenus(); new L.Draw.Polygon(map).enable(); };
 
   document.getElementById('mkDeleteBtn').onclick = () => {
-    if (currentMarkerId && markers[currentMarkerId]) {
-      map.removeLayer(markers[currentMarkerId]);
-      delete markers[currentMarkerId];
+    // 현재 선택된 마커가 없으면 종료
+    if (!currentMarkerId) { hideMenus(); return; }
+
+    const id = currentMarkerId;
+
+    // POI 마커인 경우: poiMarkers/poiData에서 제거 + Python 콜백
+    if (id.startsWith('poi_')) {
+      const pid = id.slice(4);
+      if (poiMarkers[pid]) {
+        try { map.removeLayer(poiMarkers[pid]); } catch(e){}
+        delete poiMarkers[pid];
+        if (poiData) delete poiData[pid];
+      }
+      if (window.pyHandler && typeof window.pyHandler.deleteMarker === 'function') {
+        try { window.pyHandler.deleteMarker(parseInt(pid, 10)); } catch (err) { console.warn('deleteMarker error:', err); }
+      }
+      currentMarkerId = null;
+      hideMenus();
+      return;
+    }
+
+    // 사용자 추가 마커인 경우: 지도에서만 제거
+    if (markers[id]) {
+      try { map.removeLayer(markers[id]); } catch(e){}
+      delete markers[id];
       currentMarkerId = null;
     }
     hideMenus();

@@ -56,20 +56,36 @@ class Poi:
         except Exception as e:
             print(f"get_next_poi_id error: {e}")
             return 1
-            
-    def delete(self):
+
+    def delete(self, poi_id: int = None):
         db = DATABASE()
         params = []
         
         try:
 
             sql = f"""DELETE FROM {self.TABLE_NAME} WHERE site_id = %s"""
+            # 파라미터 순서: site_id 먼저, poi_id가 있으면 뒤에 추가
             params.append(self.site_id)
+            if poi_id is not None:
+                sql += " AND poi_id = %s"
+                params.append(poi_id)
 
             rows = db.execute(sql, params)
             return rows
         except Exception as e:
             print(f"delete error: {e}")
+            return None
+
+    def delete_poi(self, deleted_poi_id: int):
+        """삭제된 poi_id보다 큰 모든 poi_id를 1씩 감소시켜 연속되게 재번호"""
+        db = DATABASE()
+        try:
+            sql = f"""UPDATE {self.TABLE_NAME}
+                     SET poi_id = poi_id - 1
+                     WHERE site_id = %s AND poi_id > %s"""
+            return db.execute(sql, [self.site_id, deleted_poi_id])
+        except Exception as e:
+            print(f"delete_poi error: {e}")
             return None
 
     def insert(self):

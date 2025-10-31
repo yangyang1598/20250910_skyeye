@@ -34,7 +34,10 @@ class WebChannelHandler(QObject):
     def __init__(self, main_window):
         super().__init__()
         self.main_window = main_window
-
+    
+    # --------------------------
+    # 데이터 표기
+    # --------------------------
     @Slot('QVariant')
     def showCameraDialog(self, data):
         """JavaScript → Python: 카메라 다이얼로그 호출"""
@@ -55,7 +58,16 @@ class WebChannelHandler(QObject):
             print(f"❌ 카메라 다이얼로그 표시 오류: {e}")
             import traceback
             traceback.print_exc()
-
+    # --------------------------
+    # 마우스 커서 위치 업데이트
+    # --------------------------
+    @Slot(float, float)
+    def updateCursorLatLng(self, lat, lng):
+        """JavaScript → Python: 마우스 커서 위젯 위치 업데이트"""
+        self.main_window.update_cursor_latlng(lat, lng)
+    # --------------------------
+    # 마커 관련
+    # --------------------------
     @Slot(float, float)
     def requestMarkerInputs(self, lat, lng):
         """JavaScript → Python: Qt 다이얼로그로 각도/줌 입력 요청"""
@@ -116,11 +128,26 @@ class WebChannelHandler(QObject):
             self.main_window.update_poi_db(target.latitude,target.longitude,degree,zoom,protocol_module.SITE_ID,poi_id)
         except Exception as e:
             print(f"❌ POI 편집 처리 오류: {e}")
-
-    @Slot(float, float)
-    def updateCursorLatLng(self, lat, lng):
-        """JavaScript → Python: 마우스 커서 위젯 위치 업데이트"""
-        self.main_window.update_cursor_latlng(lat, lng)
+    @Slot()
+    def deleteAllMarkers(self):
+        """JavaScript → Python: 모든 마커 삭제"""
+        try:
+            self.main_window.delete_all_markers()
+            print("모든 마커 삭제 완료")
+        except Exception as e:
+            print(f"❌ 모든 마커 삭제 오류: {e}")
+    @Slot(int)
+    def deleteMarker(self, poi_id: int):
+        """JavaScript → Python: 특정 마커 삭제"""
+        try:
+            self.main_window.delete_marker(poi_id)
+            print(f"마커 삭제 완료: poi_id={poi_id}")
+        except Exception as e:
+            print(f"❌ 마커 삭제 오류: {e}")
+            
+    # --------------------------
+    # 산불 센서 알림 클릭릭
+    # --------------------------
 
     @Slot(int, float, float)
     def onFireSensorClick(self, idx, lat, lng):
@@ -130,15 +157,7 @@ class WebChannelHandler(QObject):
         self.main_window.fire_sensor_widget.set_fire_sensor(index=idx)
         self.main_window.show_fire_sensor_widget(idx)
 
-    @Slot()
-    def deleteAllMarkers(self):
-        """JavaScript → Python: 모든 마커 삭제"""
-        try:
-            self.main_window.delete_all_markers()
-            print("모든 마커 삭제 완료")
-        except Exception as e:
-            print(f"❌ 모든 마커 삭제 오류: {e}")
-            
+   
 # ------------------------------
 # 메인 윈도우 클래스
 # ------------------------------
@@ -593,6 +612,46 @@ class MapApp(QMainWindow):
         self.db_poi.site_id=protocol_module.SITE_ID
         self.db_poi.delete()
     
+    def delete_marker(self,poi_id):
+        """poi_id에 해당하는 마커 삭제"""
+        try:
+            # site_id 설정 후 삭제 수행
+            self.db_poi.site_id = protocol_module.SITE_ID
+            # 1) 대상 poi 삭제
+            self.db_poi.delete(poi_id)
+            # 2) 이후 id들 재정렬 (poi_id > 삭제_id 인 것들 -1)
+            self.db_poi.delete_poi(poi_id)
+            print(f"마커 삭제 완료: poi_id={poi_id}")
+
+            # 3) 변경된 POI 목록 재조회 및 지도 리프레시 (POI 마커 전부 삭제 → 다시 렌더링)
+            try:
+                self.db_poi_list = self.db_poi.select()
+                pois = []
+                for p in (self.db_poi_list or []):
+                    pois.append({
+                        'poi_id': getattr(p, 'poi_id', None),
+                        'lat': getattr(p, 'latitude', None),
+                        'lng': getattr(p, 'longitude', None),
+                        'altitude': getattr(p, 'altitude', None),
+                        'zoom_level': getattr(p, 'zoom_level', None)
+                    })
+                js_clear = (
+                    "try {"
+                    "  Object.keys(poiMarkers || {}).forEach(id => {"
+                    "    try { map.removeLayer(poiMarkers[id]); } catch(e){}"
+                    "    delete poiMarkers[id];"
+                    "    if (poiData) delete poiData[id];"
+                    "  });"
+                    "} catch(e) { console.warn('poi clear error', e); }"
+                )
+                self.web_view.page().runJavaScript(js_clear)
+                js_render = f"if (typeof renderPoiMarkers === 'function') {{ renderPoiMarkers({json.dumps(pois)}); }}"
+                self.web_view.page().runJavaScript(js_render)
+            except Exception as e:
+                print(f"⚠️ POI 리프레시 오류: {e}")
+        except Exception as e:
+            print(f"❌ 마커 삭제 오류: {e}")
+
     def insert_poi_db(self,latitude,longitude,degree,zoom,site_id):
   
         # 기본 필드 설정
@@ -610,7 +669,7 @@ class MapApp(QMainWindow):
         self.db_poi.poi_id = next_id
 
         self.db_poi.insert()
-        
+
     def update_poi_db(self,latitude,longitude,degree,zoom,site_id,poi_id):
         # 기본 필드 설정
         self.db_poi.date=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -622,6 +681,7 @@ class MapApp(QMainWindow):
         self.db_poi.zoom_level=zoom
 
         self.db_poi.update()
+    
     # --------------------------
     # 입력 다이얼로그
     # --------------------------
