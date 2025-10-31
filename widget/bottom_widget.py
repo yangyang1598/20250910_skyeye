@@ -36,6 +36,13 @@ class BottomWidget(QWidget, Ui_Form):
         self.radio_around_patrol.toggled.connect(self.on_radio_btn_toggled)
         self.radio_registered_loction.toggled.connect(self.on_radio_btn_toggled)
         
+    def is_registered_patrol_running(self) -> bool:
+        """등록지점 순찰이 진행 중인지 여부 반환"""
+        try:
+            return bool(self.radio_registered_loction.isChecked() and self.button_start_patrol.text() == "순찰 중지")
+        except Exception:
+            return False
+
     def on_click_move_location(self):
         """헬리카이트 위치 이동 버튼 클릭 시 위치 이동 신호 발생"""
         self.moveLocationRequested.emit()

@@ -132,6 +132,38 @@ class WebChannelHandler(QObject):
     def deleteAllMarkers(self):
         """JavaScript → Python: 모든 마커 삭제"""
         try:
+            # 순찰 상태에 따른 삭제 가드
+            bw = getattr(self.main_window, 'bottom_widget', None)
+            if bw and bw.is_registered_patrol_running():
+                try:
+                    QMessageBox.information(
+                        self.main_window,
+                        "삭제 불가",
+                        "등록지점 순찰 중에는 등록지점 초기화를 할 수 없습니다"
+                    )
+                except Exception as e:
+                    print(f"⚠️ 삭제 불가 안내창 오류: {e}")
+
+                # JS 측에서 이미 삭제 UI를 수행했을 가능성에 대비해 POI를 즉시 복원
+                try:
+                    self.main_window.db_poi.site_id = protocol_module.SITE_ID
+                    self.main_window.db_poi_list = self.main_window.db_poi.select()
+                    pois = []
+                    for p in (self.main_window.db_poi_list or []):
+                        pois.append({
+                            'poi_id': getattr(p, 'poi_id', None),
+                            'lat': getattr(p, 'latitude', None),
+                            'lng': getattr(p, 'longitude', None),
+                            'altitude': getattr(p, 'altitude', None),
+                            'zoom_level': getattr(p, 'zoom_level', None)
+                        })
+                    js_render = f"if (typeof renderPoiMarkers === 'function') {{ renderPoiMarkers({json.dumps(pois)}); }}"
+                    self.main_window.web_view.page().runJavaScript(js_render)
+                except Exception as e:
+                    print(f"⚠️ 삭제 취소 후 POI 복원 오류: {e}")
+                return
+
+            # 삭제 실행
             self.main_window.delete_all_markers()
             print("모든 마커 삭제 완료")
         except Exception as e:
