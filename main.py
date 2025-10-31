@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QGridLayout, QSpacerItem, QSizePolicy, QMessageBox, QInputDialog
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtCore import QUrl, QTimer, QObject, Slot
+from PySide6.QtCore import QUrl, QTimer, QObject, Slot, Signal, Qt
 from PySide6.QtWebEngineCore import QWebEngineSettings
 from PySide6.QtWebChannel import QWebChannel
 
@@ -83,8 +83,8 @@ class WebChannelHandler(QObject):
 
             # 저장 후 JS에 마커 생성 요청
             self.main_window.set_marker_inputs(degree, zoom, lat, lng)
-            js = f"if (typeof addMarkerAt === 'function') {{ addMarkerAt({lat}, {lng}); }}"
-            self.main_window.web_view.page().runJavaScript(js)
+            # 임시 사용자 마커(addMarkerAt)는 생성하지 않습니다.
+            # DB에 저장 후 POI 리스트를 다시 렌더링하여 즉시 편집 가능한 POI 마커로 표시합니다.
 
             print(f"마커 생성 요청: lat={lat}, lng={lng}, degree={degree}, zoom={zoom},site_id={protocol_module.SITE_ID}")
             self.main_window.insert_poi_db(lat,lng,degree,zoom,protocol_module.SITE_ID)
@@ -162,6 +162,8 @@ class WebChannelHandler(QObject):
 # 메인 윈도우 클래스
 # ------------------------------
 class MapApp(QMainWindow):
+    # 백그라운드 스레드에서 온 SSE 이벤트를 메인 스레드로 전달하기 위한 시그널
+    sse_event_signal = Signal(object)
     def __init__(self):
         super().__init__()
         self.device_data = None
@@ -178,6 +180,9 @@ class MapApp(QMainWindow):
         self.point_zoom = None
         self.point_lat = None
         self.point_lng = None
+
+        # HTML 로딩 여부 플래그 (JS 호출 안전 가드용)
+        self.html_loaded = False
 
         #DB 클래스 정의
         self.db_poi=Poi()
@@ -196,6 +201,12 @@ class MapApp(QMainWindow):
         self.setup_window()
         self.setup_mission_device_list()
 
+        # SSE 이벤트를 메인 스레드로 안전하게 디스패치 (QueuedConnection 보장)
+        try:
+            self.sse_event_signal.connect(self._handle_sse_event_main_thread, Qt.QueuedConnection)
+        except Exception as e:
+            print(f"⚠️ SSE 시그널 연결 오류: {e}")
+
 
     # --------------------------
     # 초기화 관련 메서드
@@ -208,6 +219,15 @@ class MapApp(QMainWindow):
         self.bottom_widget = BottomWidget()
         self.protocol = Protocol()
         self.fire_sensor_widget = FireSenSorWidget()
+
+        # 하단 위젯 UI 상태 변경 감지를 지도 버튼 표시 제어와 연결
+        try:
+            self.bottom_widget.button_start_patrol.clicked.connect(self.on_patrol_ui_changed)
+            self.bottom_widget.button_start_patrol.toggled.connect(self.on_patrol_ui_changed)
+            self.bottom_widget.radio_around_patrol.toggled.connect(self.on_patrol_ui_changed)
+            self.bottom_widget.radio_registered_loction.toggled.connect(self.on_patrol_ui_changed)
+        except Exception as e:
+            print(f"⚠️ 하단 위젯 UI 변경 연결 오류: {e}")
 
     def setup_ui(self):
         """메인 UI 설정"""
@@ -450,7 +470,27 @@ class MapApp(QMainWindow):
         if (typeof focusTracked === 'function') { focusTracked(); }
         """
         self.web_view.page().runJavaScript(js_code)
-        
+
+    def sync_marker_actions_visibility(self):
+        """BottomWidget 상태에 따라 지도 마커 작업 버튼 표시/숨김 동기화"""
+        try:
+            # HTML이 아직 로드되지 않았다면 JS 호출을 생략
+            if not getattr(self, 'html_loaded', False) or not getattr(self, 'web_view', None):
+                return
+            btn = getattr(self.bottom_widget, 'button_start_patrol', None)
+            txt = btn.text() if btn else ""
+            radio = getattr(self.bottom_widget, 'radio_registered_loction', None)
+            registered_checked = radio.isChecked() if radio else False
+            enabled = (txt == "순찰 시작") and registered_checked
+            js = f"if (typeof setMarkerActionEnabled === 'function') {{ setMarkerActionEnabled({str(enabled).lower()}); }}"
+            self.web_view.page().runJavaScript(js)
+        except Exception as e:
+            print(f"⚠️ 마커 버튼 표시 동기화 오류: {e}")
+
+    def on_patrol_ui_changed(self, *args, **kwargs):
+        """하단 순찰 UI 상태 변경 시 지도 버튼 표시 상태 갱신"""
+        self.sync_marker_actions_visibility()
+
     def update_cursor_latlng(self, lat, lng):
         if self.bottom_widget:
             self.bottom_widget.set_location(lat, lng)
@@ -576,6 +616,8 @@ class MapApp(QMainWindow):
     def on_load_finished(self, ok):
         if ok:
             print("✅ HTML 로딩 완료!")
+            # JS 호출 가능 상태로 표시
+            self.html_loaded = True
             js_init_code = """
             new QWebChannel(qt.webChannelTransport, function(channel) {
                 window.pyHandler = channel.objects.pyHandler;
@@ -589,6 +631,11 @@ class MapApp(QMainWindow):
                 self.update_fire_sensor_circles()
             except Exception as e:
                 print(f"⚠️ FireSensor 색상 적용 오류: {e}")
+            # 지도 마커 작업 버튼 초기 표시 상태 동기화
+            try:
+                self.sync_marker_actions_visibility()
+            except Exception as e:
+                print(f"⚠️ 마커 버튼 초기 동기화 오류: {e}")
         else:
             print("❌ HTML 로딩 실패")
 
@@ -670,6 +717,34 @@ class MapApp(QMainWindow):
 
         self.db_poi.insert()
 
+        # 삽입 후 최신 POI 목록을 다시 조회하여 지도에 즉시 반영
+        try:
+            self.db_poi_list = self.db_poi.select()
+            pois = []
+            for p in (self.db_poi_list or []):
+                pois.append({
+                    'poi_id': getattr(p, 'poi_id', None),
+                    'lat': getattr(p, 'latitude', None),
+                    'lng': getattr(p, 'longitude', None),
+                    'altitude': getattr(p, 'altitude', None),
+                    'zoom_level': getattr(p, 'zoom_level', None)
+                })
+            js_clear = (
+                "try {"
+                "  Object.keys(poiMarkers || {}).forEach(id => {"
+                "    try { map.removeLayer(poiMarkers[id]); } catch(e){}"
+                "    delete poiMarkers[id];"
+                "    if (poiData) delete poiData[id];"
+                "  });"
+                "} catch(e) { console.warn('poi clear error', e); }"
+            )
+            self.web_view.page().runJavaScript(js_clear)
+            js_render = f"if (typeof renderPoiMarkers === 'function') {{ renderPoiMarkers({json.dumps(pois)}); }}"
+            self.web_view.page().runJavaScript(js_render)
+            print(f"POI 삽입 후 지도 리프레시: 총 {len(pois)}개")
+        except Exception as e:
+            print(f"⚠️ POI 리프레시 오류: {e}")
+
     def update_poi_db(self,latitude,longitude,degree,zoom,site_id,poi_id):
         # 기본 필드 설정
         self.db_poi.date=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -720,33 +795,46 @@ class MapApp(QMainWindow):
         return val if ok else None
 
     def handle_sse_event(self, data):
-        """SSE 이벤트 수신 처리: connect 포함 시 BottomWidget에서 출력"""
+        """SSE 이벤트 수신 처리 (백그라운드 스레드): Qt 시그널로 메인 스레드 디스패치"""
         try:
-            # data가 이미 dict일 수 있으므로 중복 파싱을 피하고,
-            # 문자열인 경우에만 JSON 파싱을 시도합니다.
+            # 문자열이면 JSON 파싱 시도
             if isinstance(data, str):
                 try:
-                    parsed = json.loads(data)
-                    data = parsed
+                    data = json.loads(data)
                 except Exception:
-                    # 유효한 JSON이 아니면 원본 문자열을 그대로 사용
                     pass
+            self.sse_event_signal.emit(data)
+        except Exception as e:
+            print(f"❌ SSE 이벤트 처리(emit) 오류: {e}")
+            import traceback
+            traceback.print_exc()
+        return
 
-            # 안전하게 로깅 (dict일 때만 .get 사용)
-            cmd_val = data.get('cmd') if isinstance(data, dict) else None
-            # print(f"main App {data},{type(data)},{cmd_val}")
-
+    def _handle_sse_event_main_thread(self, data):
+        """메인 스레드에서 SSE 이벤트 처리: UI 업데이트 및 JS 동기화"""
+        print("SSE 이벤트 수신:", data,type(data))
+        try:
             if isinstance(data, dict):
                 if self.bottom_widget:
-                    self.bottom_widget.receive_connect_signal(data)
+                    try:
+                        self.bottom_widget.receive_connect_signal(data)
+                    except Exception as e:
+                        print(f"⚠️ BottomWidget 신호 처리 오류: {e}")
+                # 지도 버튼 표시 동기화 (JS 호출은 메인 스레드에서만 수행)
+                try:
+                    self.sync_marker_actions_visibility()
+                except Exception as e:
+                    print(f"⚠️ 마커 버튼 SSE 동기화 오류: {e}")
                 if self.ir_camera_set_widget and isIR:
-                    self.ir_camera_set_widget.set_radio_image_sensor(data)
+                    try:
+                        self.ir_camera_set_widget.set_radio_image_sensor(data)
+                    except Exception as e:
+                        print(f"⚠️ IR 카메라 센서 표시 오류: {e}")
             else:
-                # dict가 아닌 이벤트(문자열/기타)는 현재 처리하지 않음
-                # 필요 시 특정 문자열 이벤트에 대한 분기 추가 가능
+                # dict가 아닌 이벤트는 현재 처리하지 않음
                 pass
         except Exception as e:
-            print(f"❌ SSE 이벤트 처리 오류: {e}")
+            print(f"❌ SSE 이벤트 메인 처리 오류: {e}")
             import traceback
             traceback.print_exc()
         return

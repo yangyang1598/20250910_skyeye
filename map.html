@@ -408,6 +408,7 @@
         const m = L.marker([lat, lng]).addTo(map);
         m.on('click', ev => {
           hideMenus();
+          if (!markerActionsEnabled) return;
           markerMenu.style.left = ev.containerPoint.x + "px";
           markerMenu.style.top = ev.containerPoint.y + "px";
           markerMenu.style.display = "block";
@@ -443,6 +444,7 @@
     const m = L.marker([lat, lng]).addTo(map);
     m.on('click', ev => {
       hideMenus();
+      if (!markerActionsEnabled) return;
       markerMenu.style.left = ev.containerPoint.x + "px";
       markerMenu.style.top = ev.containerPoint.y + "px";
       markerMenu.style.display = "block";
@@ -465,6 +467,7 @@
    ***************************************************************************/
   document.getElementById('addMarkerBtn').onclick = () => {
     hideMenus();
+    if (!markerActionsEnabled) return;
 
     // 우클릭 위치(컨텍스트 메뉴 기준)가 없으면 중단
     if (!lastCtxLatLng) {
@@ -483,6 +486,7 @@
   // if (addPolygonBtn) addPolygonBtn.onclick = () => { hideMenus(); new L.Draw.Polygon(map).enable(); };
 
   document.getElementById('mkDeleteBtn').onclick = () => {
+    if (!markerActionsEnabled) { hideMenus(); return; }
     // 현재 선택된 마커가 없으면 종료
     if (!currentMarkerId) { hideMenus(); return; }
 
@@ -530,7 +534,9 @@
         if (poiData) delete poiData[id];
       });
       currentMarkerId = null;
-      window.pyHandler.deleteAllMarkers();
+      if (window.pyHandler && typeof window.pyHandler.deleteAllMarkers === 'function') {
+        try { window.pyHandler.deleteAllMarkers(); } catch(e) { console.warn('deleteAllMarkers error:', e); }
+      }
       console.log('모든 마커 삭제 완료');
     } catch (err) {
       console.warn('모든 마커 삭제 중 오류:', err);
@@ -540,30 +546,52 @@
   // 컨텍스트 메뉴: 마커 편집 (POI 대상)
   document.getElementById('editMarkerBtn').onclick = () => {
     hideMenus();
+    if (!markerActionsEnabled) return;
+    try {
+      console.log('[디버그] 편집 시작', {
+        markerActionsEnabled,
+        currentMarkerId,
+        lastCtxLatLng,
+        poiKeys: Object.keys(poiData || {}),
+        poiMarkerKeys: Object.keys(poiMarkers || {})
+      });
+    } catch (e) {}
 
     // 우선 현재 선택된 마커가 POI인지 확인
     let targetId = null;
     if (currentMarkerId && currentMarkerId.startsWith('poi_')) {
       targetId = currentMarkerId.slice(4);
+      try { console.log('[디버그] 선택 마커 기반 편집 대상', { targetId }); } catch (e) {}
     } else if (lastCtxLatLng) {
       targetId = nearestPoiId(lastCtxLatLng, 80);
+      try { console.log('[디버그] 근접 탐색 기반 편집 대상', { targetId, 기준좌표: lastCtxLatLng }); } catch (e) {}
     }
 
     if (!targetId || !poiData[targetId]) {
-      console.warn('편집할 POI 마커를 찾을 수 없습니다. 마커를 클릭 후 시도하세요.');
+      try {
+        console.warn('편집할 POI 마커를 찾을 수 없습니다. 마커를 클릭 후 시도하세요.', {
+          targetId,
+          poi존재여부: !!(targetId && poiData[targetId])
+        });
+      } catch (e) {}
       return;
     }
 
     const p = poiData[targetId];
+    try { console.log('[디버그] 편집 대상 POI 데이터', p); } catch (e) {}
     // Qt 환경: Python에 편집 입력 요청 (기본값 altitude/zoom_level)
     if (window.pyHandler && typeof window.pyHandler.requestEditMarkerInputs === 'function') {
-      try { window.pyHandler.requestEditMarkerInputs(parseInt(targetId, 10)); } catch (err) { console.warn('requestEditMarkerInputs error:', err); }
+      try {
+        console.log('[디버그] Python 요청: requestEditMarkerInputs', { targetId });
+        window.pyHandler.requestEditMarkerInputs(parseInt(targetId, 10));
+      } catch (err) { console.warn('requestEditMarkerInputs error:', err); }
       return;
     }
 
     // 브라우저 프리뷰 환경: 기본값으로 프롬프트 제공
     const degDefault = (p.altitude !== undefined && p.altitude !== null) ? String(p.altitude) : '';
     const zoomDefault = (p.zoom_level !== undefined && p.zoom_level !== null) ? String(p.zoom_level) : '';
+    try { console.log('[디버그] 프롬프트 기본값', { degDefault, zoomDefault }); } catch (e) {}
     const deg = window.prompt('대상 각도 입력 (-180 ~ 180)', degDefault);
     if (deg === null) return;
     const zd = window.prompt('줌 레벨 입력 (0~10 정수)', zoomDefault);
@@ -684,6 +712,24 @@
       map.setView([lat, lng], 15);
     }
     lastDroneData = data;
+  }
+
+  /**************************************************************************
+   * 마커 작업 버튼 표시/숨김 토글 함수
+   ***************************************************************************/
+  var markerActionsEnabled = false;
+  function setMarkerActionEnabled(enabled) {
+    try {
+      markerActionsEnabled = !!enabled;
+      const addBtn = document.getElementById('addMarkerBtn');
+      const delBtn = document.getElementById('mkDeleteBtn');
+      const editBtn = document.getElementById('editMarkerBtn');
+      if (addBtn) addBtn.style.display = markerActionsEnabled ? 'block' : 'none';
+      if (delBtn) delBtn.style.display = markerActionsEnabled ? 'block' : 'none';
+      if (editBtn) editBtn.style.display = markerActionsEnabled ? 'block' : 'none';
+    } catch (e) {
+      console.warn('setMarkerActionEnabled error:', e);
+    }
   }
 
   /**************************************************************************
