@@ -414,6 +414,21 @@
           markerMenu.style.display = "block";
           currentMarkerId = `poi_${id}`;
         });
+        // 마우스 오버 시 마커 바로 위에 정보 표시
+        try {
+          const infoHtml = `<div><b>POI ${id}</b>` +
+                           `<br>Lat: ${lat.toFixed(6)}` +
+                           `<br>Lng: ${lng.toFixed(6)}` +
+                           (`altitude` in p && p.altitude !== undefined && p.altitude !== null ? `<br>Alt: ${p.altitude}` : '') +
+                           (`zoom_level` in p && p.zoom_level !== undefined && p.zoom_level !== null ? `<br>Zoom: ${p.zoom_level}` : '') +
+                           `</div>`;
+          m.bindTooltip(infoHtml, {
+            direction: 'top',
+            offset: [0, -12],
+            opacity: 0.95,
+            className: 'poi-tooltip'
+          });
+        } catch (e) { console.warn('bindTooltip error:', e); }
         poiMarkers[id] = m;
         poiData[id] = { poi_id: p.poi_id, lat: lat, lng: lng, altitude: p.altitude, zoom_level: p.zoom_level };
       });
