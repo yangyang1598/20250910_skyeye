@@ -178,7 +178,7 @@ class WebChannelHandler(QObject):
             print(f"❌ 마커 삭제 오류: {e}")
             
     # --------------------------
-    # 산불 센서 알림 클릭릭
+    # 산불 센서 알림 클릭
     # --------------------------
 
     @Slot(int, float, float)
@@ -189,6 +189,27 @@ class WebChannelHandler(QObject):
         self.main_window.fire_sensor_widget.set_fire_sensor(index=idx)
         self.main_window.show_fire_sensor_widget(idx)
 
+    # --------------------------
+    # 클릭 위치로 카메라 위치 이동
+    # --------------------------
+    @Slot(float, float)
+    def moveCameraPosition(self, lat, lng):
+        """JavaScript → Python: 카메라 위치 이동"""
+        try:
+            # 각도/줌 입력을 받아 (나중 사용을 위해) 보관
+            degree = self.main_window.show_tagert_angle_message()
+            if degree is None:
+                print("사용자 각도 입력 취소")
+                return
+            zoom = self.main_window.show_tagert_zoom_message()
+            if zoom is None:
+                print("사용자 줌 입력 취소")
+                return
+           
+            # 실제 카메라 이동 로직이 있다면 아래에서 호출
+            self.main_window.move_camera_position(lat, lng,degree,zoom)
+        except Exception as e:
+            print(f"❌ 카메라 위치 이동 오류: {e}")
    
 # ------------------------------
 # 메인 윈도우 클래스
@@ -672,6 +693,17 @@ class MapApp(QMainWindow):
             print("❌ HTML 로딩 실패")
 
     # --------------------------
+    # 카메라 위치 이동
+    # --------------------------
+    def move_camera_position(self,lat,lng,alt,zoomlevel):
+        print(f"카메라 위치 이동 요청: lat={lat}, lng={lng}, alt(deg)={alt}, zoomlevel={zoomlevel}")
+        set_text = {
+                        "cmd": "poi",
+                        "mode": "single",
+                        "value": {"lat":lat,"lng":lng,"alt":alt, "zoomlevel":zoomlevel } #poi 마커의 모든 값 
+            }
+        self.protocol.post_event_message(set_text)
+    # --------------------------
     # 등록지점 마커
     # --------------------------
     def set_marker_inputs(self, degree: float, zoom: int, lat: float = None, lng: float = None):
@@ -795,6 +827,12 @@ class MapApp(QMainWindow):
     def show_tagert_angle_message(self):
         """각도 입력 다이얼로그 (-180 ~ 180)"""
         try:
+            # 다이얼로그 표시 전 지도 메뉴 닫기 (겹침 방지)
+            try:
+                js_hide = "try{ hideMenus(); }catch(e){ try{ ctxMenu.style.display='none'; markerMenu.style.display='none'; }catch(err){} }"
+                self.web_view.page().runJavaScript(js_hide)
+            except Exception as e:
+                print(f"⚠️ 메뉴 닫기 JS 호출 오류: {e}")
             default = int(self.point_degree) if self.point_degree is not None else 0
         except Exception:
             default = 0
@@ -870,7 +908,7 @@ class MapApp(QMainWindow):
             import traceback
             traceback.print_exc()
         return
-
+    # -------------------------
     # 사이트 선택 창 오류 처리
     # --------------------------
     def on_device_dialog_accepted(self):
@@ -931,7 +969,7 @@ class MapApp(QMainWindow):
                 self.camera_md_data_widget.update_data(data,isIR)
             except Exception as e:
                 print(f"⚠️ 다이얼로그 데이터 업데이트 오류: {e}")
-    
+
 # ------------------------------
 # 실행부
 # ------------------------------

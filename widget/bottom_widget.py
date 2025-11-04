@@ -157,8 +157,10 @@ class BottomWidget(QWidget, Ui_Form):
                     }
                     self.protocol.post_event_message(self.start_text)
         else:
+            # 현재 선택된 라디오에 따라 정지 명령 cmd 설정
+            cmd_type = "round" if self.radio_around_patrol.isChecked() else "poi"
             self.stop_text = {
-                    "cmd": "round",
+                    "cmd": cmd_type,
                     "mode": "stop",
                     "value": "" 
                     }
@@ -170,9 +172,9 @@ class BottomWidget(QWidget, Ui_Form):
         # 프로그램적 초기화 중 발생한 토글은 무시합니다.
         if self.init_command:
             return
-
+        cmd_type = "poi" if self.radio_around_patrol.isChecked() else "round"
         self.stop_text = {
-            "cmd": "round",
+            "cmd": cmd_type,
             "mode": "stop",
             "value": ""
         }

@@ -75,6 +75,7 @@
   <div id="ctxMenu">
     <button id="addMarkerBtn">마커 추가</button>
     <button id="deleteAllMarkerBtn">모든 마커 삭제</button>
+    <button id="moveCameraPositionBtn">카메라 위치 이동</button>
     <!-- <button id="addPolygonBtn">폴리곤 추가</button> -->
   </div>
   <div id="markerMenu">
@@ -142,7 +143,7 @@
   }
 
   /**************************************************************************
-   * 센서 마커 생성 및 상태 업데이트
+   * 산불센서 마커 생성 및 상태 업데이트
    ***************************************************************************/
   function setSensorMarkerIcon(marker, iconUrl) {
     if (!marker) return;
@@ -390,6 +391,33 @@
   const markers = {}; // polygons disabled
   let lastCtxLatLng = null, currentMarkerId = null; // currentPolygonId and currentPolygonLayer disabled
 
+  /**************************************************************************
+   * 마우스 위치 표기
+   ***************************************************************************/
+  // 마우스 위치를 Python (Qt) 에 전달
+  map.on('mousemove', function(e) {
+    if (window.pyHandler && typeof window.pyHandler.updateCursorLatLng === 'function') {
+      try { window.pyHandler.updateCursorLatLng(e.latlng.lat, e.latlng.lng); } catch (err) { console.warn(err); }
+    }
+  });
+
+  /**************************************************************************
+   * 카메라 위치 이동
+   ***************************************************************************/
+  document.getElementById('moveCameraPositionBtn').onclick = () => {
+    try { hideMenus(); } catch(e) {}
+    // 마지막으로 클릭(컨텍스트)한 위치가 있어야 위경도를 전달 가능
+    if (!lastCtxLatLng || !Number.isFinite(lastCtxLatLng.lat) || !Number.isFinite(lastCtxLatLng.lng)) {
+      try { showTopMessage('지도의 위치를 먼저 클릭하세요', { type: 'warn', timeout: 1800 }); } catch(e) {}
+      return;
+    }
+    if (window.pyHandler && typeof window.pyHandler.moveCameraPosition === 'function') {
+      try { window.pyHandler.moveCameraPosition(lastCtxLatLng.lat, lastCtxLatLng.lng); } catch (err) { console.warn(err); }
+    }
+  }
+  /**************************************************************************
+   * POI  관련
+   ***************************************************************************/
   // POI 마커 저장소
   const poiMarkers = {}; // id(string) -> L.Marker
   const poiData = {};    // id(string) -> { poi_id, lat, lng, altitude, zoom_level }
@@ -477,9 +505,7 @@
   });
   ['click','movestart','zoomstart'].forEach(ev => map.on(ev, hideMenus));
 
-    /**************************************************************************
-   * 마커 추가 알림창 설정 및 좌표/줌/각도 입력 값 main.py 전달
-   ***************************************************************************/
+  //마커 추가 버튼 클릭 이벤트
   document.getElementById('addMarkerBtn').onclick = () => {
     hideMenus();
     if (!markerActionsEnabled) return;
@@ -499,7 +525,8 @@
 
   // const addPolygonBtn = document.getElementById('addPolygonBtn');
   // if (addPolygonBtn) addPolygonBtn.onclick = () => { hideMenus(); new L.Draw.Polygon(map).enable(); };
-
+  
+  // 마커 삭제 버튼 클릭 이벤트
   document.getElementById('mkDeleteBtn').onclick = () => {
     if (!markerActionsEnabled) { hideMenus(); return; }
     // 현재 선택된 마커가 없으면 종료
@@ -646,12 +673,6 @@
      } */
   });
 
-  // 마우스 위치를 Python (Qt) 에 전달
-  map.on('mousemove', function(e) {
-    if (window.pyHandler && typeof window.pyHandler.updateCursorLatLng === 'function') {
-      try { window.pyHandler.updateCursorLatLng(e.latlng.lat, e.latlng.lng); } catch (err) { console.warn(err); }
-    }
-  });
 
   /**************************************************************************
    * 상단 메시지 표시
