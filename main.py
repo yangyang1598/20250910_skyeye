@@ -244,6 +244,7 @@ class MapApp(QMainWindow):
         self.bottom_toggle_state = False
         self._bottom_move_connected = False
         self.bottom_widget_alert_shown = False
+        self.bottom_widget_initial_force_done = False
         
         self.init_widget()
         self.setup_ui()
@@ -602,7 +603,14 @@ class MapApp(QMainWindow):
         
 
         # 정상 연결 시 최초 1회 하단만 강제 표시
-        self.show_bottom_widget(True)
+                # 정상 연결 시 최초 1회 하단만 강제 표시 (이미 표시했다면 재실행하지 않음)
+        if not self.bottom_widget_initial_force_done:
+            self.show_bottom_widget(True)
+            try:
+                if self.bottom_widget and self.bottom_widget.isVisible():
+                    self.bottom_widget_initial_force_done = True
+            except Exception:
+                pass
         self.no_device_message_shown = False
 
         self.device_data = data
