@@ -933,6 +933,9 @@ class MapApp(QMainWindow):
 
             camera_serial=self.protocol.get_camera_serial_number()
             
+            if not camera_serial:
+                QMessageBox.information(self, "알림", "임무장비에 연결된 카메라 값이 없습니다")
+                return
             if "IR" in camera_serial:
                 isIR=True
             else:
