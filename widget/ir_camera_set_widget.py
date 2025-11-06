@@ -55,25 +55,25 @@ class IRCameraSetWidget(QWidget, Ui_Form):
         elif self.image_sensor=="ir":
             self.radio_ir.setChecked(True)
         elif self.image_sensor=="eo_ir_pip":
-            self.radio_EO_IR.setChecked(True)
+            self.radio_eo_ir_pip.setChecked(True)
         elif self.image_sensor=="ir_eo_pip":
-            self.radio_IR_EO.setChecked(True)
+            self.radio_ir_eo_pip.setChecked(True)
         
         #컬러 팔레트
         if self.color_palette=="whileHot" or self.color_palette=="whiteHot":
-            self.radio_white_hot.setChecked(True)
+            self.radio_whiteHot.setChecked(True)
         elif self.color_palette=="blackHot":
-            self.radio_black_hot.setChecked(True)
+            self.radio_blackHot.setChecked(True)
         elif self.color_palette=="redHot":
-            self.radio_red_hot.setChecked(True)
+            self.radio_redHot.setChecked(True)
         elif self.color_palette=="ironbow":
             self.radio_ironbow.setChecked(True)
         elif self.color_palette=="rainbow":
             self.radio_rainbow.setChecked(True)
         elif self.color_palette=="rainbowHc":
-            self.radio_rainbow_hc.setChecked(True)
+            self.radio_rainbowHc.setChecked(True)
         elif self.color_palette=="hotIron":
-            self.radio_hot_iron.setChecked(True)
+            self.radio_hotIron.setChecked(True)
         elif self.color_palette=="lava":
             self.radio_lava.setChecked(True)
         elif self.color_palette=="arctic":
